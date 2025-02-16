@@ -37,8 +37,7 @@ export class DatabaseBinaryStorage implements IBinaryStorage {
     const file: BinaryFile = {
       ...insertFile,
       id: 0, // Will be set by the database
-      originalContent: insertFile.originalContent.toString('base64'),
-      obfuscatedContent: Buffer.from([]).toString('base64'),
+      obfuscatedContent: '', // Will be set during obfuscation
     };
 
     const [savedFile] = await db

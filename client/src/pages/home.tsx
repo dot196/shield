@@ -1,16 +1,20 @@
 import { useState } from "react";
-import { Shield, Upload, Image } from "lucide-react";
+import { Shield, Upload, Image, File } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { RegistryDialog } from "@/components/registry-dialog";
+import { type RegistryOptions } from "@shared/schema";
 
 export default function Home() {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedIcon, setSelectedIcon] = useState<File | null>(null);
+  const [registryDialogOpen, setRegistryDialogOpen] = useState(false);
+  const [registryOptions, setRegistryOptions] = useState<RegistryOptions | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -57,9 +61,14 @@ export default function Home() {
       const formData = new FormData();
       formData.append("file", selectedFile);
 
-      // If an icon is selected, add it to the form data for combined processing
+      // If an icon is selected, add it to the form data
       if (selectedIcon) {
         formData.append("ico", selectedIcon);
+      }
+
+      // If registry options are set, add them to the form data
+      if (registryOptions) {
+        formData.append("registry", JSON.stringify(registryOptions));
       }
 
       const response = await fetch("/api/obfuscate/binary", {
@@ -185,14 +194,24 @@ export default function Home() {
                     className="bg-background/50 border-primary/20 focus:border-primary w-full"
                     placeholder="Select file to obfuscate..."
                   />
-                  <Button 
-                    onClick={handleObfuscate} 
-                    disabled={isProcessing || !selectedFile}
-                    className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
-                  >
-                    <Upload className="w-4 h-4" />
-                    {isProcessing ? "Processing..." : "Obfuscate EXE"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleObfuscate} 
+                      disabled={isProcessing || !selectedFile}
+                      className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
+                    >
+                      <Upload className="w-4 h-4" />
+                      {isProcessing ? "Processing..." : "Obfuscate File"}
+                    </Button>
+                    <Button
+                      onClick={() => setRegistryDialogOpen(true)}
+                      className="bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-2"
+                      disabled={!selectedFile}
+                    >
+                      <File className="w-4 h-4" />
+                      {registryOptions ? "Edit Registry" : "Add Registry"}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-2">
@@ -234,6 +253,18 @@ export default function Home() {
           </CardContent>
         </Card>
       </div>
+      <RegistryDialog
+        open={registryDialogOpen}
+        onOpenChange={setRegistryDialogOpen}
+        onSave={(options) => {
+          setRegistryOptions(options);
+          setRegistryDialogOpen(false);
+          toast({
+            title: "Registry Info Saved",
+            description: "Registry information will be applied during obfuscation."
+          });
+        }}
+      />
     </div>
   );
 }
