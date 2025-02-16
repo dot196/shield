@@ -175,38 +175,43 @@ export default function Home() {
             <CardTitle className="text-primary">Upload Your Files</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex flex-col space-y-4">
-              <Input
-                type="file"
-                accept=".exe"
-                onChange={handleFileChange}
-                className="bg-background/50 border-primary/20 focus:border-primary w-full"
-                placeholder="Select EXE file to obfuscate..."
-              />
-              <Input
-                type="file"
-                accept=".ico"
-                onChange={handleIconChange}
-                className="bg-background/50 border-primary/20 focus:border-primary w-full"
-                placeholder="Select ICO file..."
-              />
-              <div className="flex flex-col space-y-2">
-                <Button 
-                  onClick={handleObfuscate} 
-                  disabled={isProcessing || !selectedFile || !selectedFile?.name.toLowerCase().endsWith('.exe')}
-                  className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
-                >
-                  <Upload className="w-4 h-4" />
-                  {isProcessing ? "Processing..." : "Obfuscate EXE"}
-                </Button>
-                <Button
-                  onClick={handleAddIconToExe}
-                  disabled={isProcessing || !selectedIcon}
-                  className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
-                >
-                  <Image className="w-4 h-4" />
-                  Add ICO to EXE
-                </Button>
+            <div className="flex flex-col space-y-6">
+                <div className="space-y-2">
+                  <Input
+                    type="file"
+                    accept=".exe"
+                    onChange={handleFileChange}
+                    className="bg-background/50 border-primary/20 focus:border-primary w-full"
+                    placeholder="Select EXE file to obfuscate..."
+                  />
+                  <Button 
+                    onClick={handleObfuscate} 
+                    disabled={isProcessing || !selectedFile || !selectedFile?.name.toLowerCase().endsWith('.exe')}
+                    className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
+                  >
+                    <Upload className="w-4 h-4" />
+                    {isProcessing ? "Processing..." : "Obfuscate EXE"}
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  <Input
+                    type="file"
+                    accept=".ico"
+                    onChange={handleIconChange}
+                    className="bg-background/50 border-primary/20 focus:border-primary w-full"
+                    placeholder="Select ICO file..."
+                  />
+                  <Button
+                    onClick={handleAddIconToExe}
+                    disabled={isProcessing || !selectedIcon}
+                    className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
+                  >
+                    <Image className="w-4 h-4" />
+                    Add ICO to EXE
+                  </Button>
+                </div>
+
                 <Button
                   onClick={handleGithubExport}
                   className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
@@ -215,8 +220,6 @@ export default function Home() {
                   Export to GitHub
                 </Button>
               </div>
-            </div>
-
             <div className="text-sm text-muted-foreground border border-primary/10 rounded-lg p-4 bg-black/20">
               <p className="font-medium text-primary mb-2">Supported File Types:</p>
               <ul className="list-disc list-inside space-y-1">
