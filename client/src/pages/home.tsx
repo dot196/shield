@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Shield, Upload, Image, File } from "lucide-react";
+import { Shield, Upload, Image, File, Share2 } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
 import { RegistryDialog } from "@/components/registry-dialog";
+import { ShareDialog } from "@/components/share-dialog";
 import { type RegistryOptions } from "@shared/schema";
 
 export default function Home() {
@@ -15,6 +16,9 @@ export default function Home() {
   const [selectedIcon, setSelectedIcon] = useState<File | null>(null);
   const [registryDialogOpen, setRegistryDialogOpen] = useState(false);
   const [registryOptions, setRegistryOptions] = useState<RegistryOptions | null>(null);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [obfuscatedFileUrl, setObfuscatedFileUrl] = useState<string>("");
+  const [obfuscatedFileName, setObfuscatedFileName] = useState<string>("");
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -61,12 +65,10 @@ export default function Home() {
       const formData = new FormData();
       formData.append("file", selectedFile);
 
-      // If an icon is selected, add it to the form data
       if (selectedIcon) {
         formData.append("ico", selectedIcon);
       }
 
-      // If registry options are set, add them to the form data
       if (registryOptions) {
         formData.append("registry", JSON.stringify(registryOptions));
       }
@@ -82,18 +84,27 @@ export default function Home() {
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
+      const fileName = `obfuscated_${selectedFile.name}`;
+
+      // Save the URL and filename for sharing
+      setObfuscatedFileUrl(url);
+      setObfuscatedFileName(fileName);
+
+      // Download the file
       const a = document.createElement("a");
       a.href = url;
-      a.download = `obfuscated_${selectedFile.name}`;
+      a.download = fileName;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
 
       toast({
         title: "Success",
         description: "File has been obfuscated and downloaded!"
       });
+
+      // Open share dialog after successful obfuscation
+      setShareDialogOpen(true);
     } catch (error) {
       toast({
         title: "Error",
@@ -211,6 +222,15 @@ export default function Home() {
                       <File className="w-4 h-4" />
                       {registryOptions ? "Edit Registry" : "Add Registry"}
                     </Button>
+                    {obfuscatedFileUrl && (
+                      <Button
+                        onClick={() => setShareDialogOpen(true)}
+                        className="bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-2"
+                      >
+                        <Share2 className="w-4 h-4" />
+                        Share
+                      </Button>
+                    )}
                   </div>
                 </div>
 
@@ -264,6 +284,12 @@ export default function Home() {
             description: "Registry information will be applied during obfuscation."
           });
         }}
+      />
+      <ShareDialog
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+        fileUrl={obfuscatedFileUrl}
+        fileName={obfuscatedFileName}
       />
     </div>
   );
