@@ -188,11 +188,11 @@ export default function Home() {
                   placeholder="Select ICO file..."
                 />
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col space-y-2">
                 <Button 
                   onClick={handleObfuscate} 
                   disabled={isProcessing || !selectedFile}
-                  className="bg-primary hover:bg-primary/90 text-white flex-1 flex items-center justify-center gap-2"
+                  className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
                 >
                   <Upload className="w-4 h-4" />
                   {isProcessing ? "Processing..." : "Obfuscate"}
@@ -201,7 +201,7 @@ export default function Home() {
                   onClick={handleAddIconToExe}
                   disabled={isProcessing || !selectedFile || !selectedIcon}
                   variant="outline"
-                  className="border-primary/20 hover:border-primary flex-1 flex items-center justify-center gap-2"
+                  className="w-full border-primary/20 hover:border-primary flex items-center justify-center gap-2"
                 >
                   <Image className="w-4 h-4" />
                   Add Icon to EXE
@@ -209,7 +209,7 @@ export default function Home() {
                 <Button
                   onClick={handleGithubExport}
                   variant="outline"
-                  className="border-primary/20 hover:border-primary flex-1 flex items-center justify-center gap-2"
+                  className="w-full border-primary/20 hover:border-primary flex items-center justify-center gap-2"
                 >
                   <SiGithub className="w-4 h-4" />
                   Export to GitHub
