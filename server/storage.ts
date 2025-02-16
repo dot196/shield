@@ -34,15 +34,12 @@ export class DatabaseStorage implements IStorage {
 
 export class DatabaseBinaryStorage implements IBinaryStorage {
   async saveBinaryFile(insertFile: InsertBinaryFile): Promise<BinaryFile> {
-    const file: BinaryFile = {
-      ...insertFile,
-      id: 0, // Will be set by the database
-      obfuscatedContent: '', // Will be set during obfuscation
-    };
-
     const [savedFile] = await db
       .insert(binaryFiles)
-      .values(file)
+      .values({
+        ...insertFile,
+        obfuscatedContent: '' // Will be set during obfuscation
+      })
       .returning();
 
     return savedFile;
