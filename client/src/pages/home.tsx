@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Shield, Upload } from "lucide-react";
+import { SiGithub } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -66,6 +67,15 @@ export default function Home() {
     }
   };
 
+  const handleGithubExport = () => {
+    // We'll implement GitHub export functionality here
+    window.open('https://github.com/new', '_blank');
+    toast({
+      title: "GitHub Export",
+      description: "Create a new repository and upload your obfuscated code manually for now. Full GitHub integration coming soon!",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-black">
       <div className="container mx-auto py-16 px-4">
@@ -96,14 +106,24 @@ export default function Home() {
                 onChange={handleFileChange}
                 className="flex-1 bg-background/50 border-primary/20 focus:border-primary"
               />
-              <Button 
-                onClick={handleObfuscate} 
-                disabled={isProcessing || !selectedFile}
-                className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
-              >
-                <Upload className="w-4 h-4" />
-                {isProcessing ? "Processing..." : "Obfuscate"}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleObfuscate} 
+                  disabled={isProcessing || !selectedFile}
+                  className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  {isProcessing ? "Processing..." : "Obfuscate"}
+                </Button>
+                <Button
+                  onClick={handleGithubExport}
+                  variant="outline"
+                  className="border-primary/20 hover:border-primary flex items-center gap-2"
+                >
+                  <SiGithub className="w-4 h-4" />
+                  Export to GitHub
+                </Button>
+              </div>
             </div>
 
             <div className="text-sm text-muted-foreground border border-primary/10 rounded-lg p-4 bg-black/20">
