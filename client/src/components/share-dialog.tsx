@@ -4,8 +4,10 @@ import {
   SiX,
   SiLinkedin,
   SiFacebook,
-  SiReddit 
+  SiReddit,
+  SiTelegram
 } from "react-icons/si";
+import { Download } from "lucide-react";
 
 interface ShareDialogProps {
   open: boolean;
@@ -23,12 +25,22 @@ export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDial
     twitter: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
-    reddit: `https://reddit.com/submit?url=${encodedUrl}&title=${encodedText}`
+    reddit: `https://reddit.com/submit?url=${encodedUrl}&title=${encodedText}`,
+    telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`
   };
 
   const handleShare = (platform: keyof typeof shareLinks) => {
     window.open(shareLinks[platform], '_blank', 'width=600,height=400');
     onOpenChange(false);
+  };
+
+  const handleDownload = () => {
+    const a = document.createElement("a");
+    a.href = fileUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   return (
@@ -65,6 +77,20 @@ export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDial
           >
             <SiReddit className="w-4 h-4" />
             Reddit
+          </Button>
+          <Button
+            onClick={() => handleShare('telegram')}
+            className="bg-[#0088cc] hover:bg-[#0088cc]/90 text-white flex items-center justify-center gap-2"
+          >
+            <SiTelegram className="w-4 h-4" />
+            Telegram
+          </Button>
+          <Button
+            onClick={handleDownload}
+            className="bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            Download
           </Button>
         </div>
       </DialogContent>
