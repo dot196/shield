@@ -73,7 +73,7 @@ export default function Home() {
           <Shield className="w-16 h-16 mb-6 text-primary animate-pulse" />
           <div className="space-y-4">
             <h1 className="text-5xl font-black tracking-tight bg-gradient-to-r from-primary via-red-500 to-primary/60 text-transparent bg-clip-text animate-gradient">
-              DelinquencyShield
+              Dlinqnt Shield
             </h1>
             <p className="text-xl font-medium bg-gradient-to-r from-red-400 to-red-600 text-transparent bg-clip-text">
               Advanced Binary Code Obfuscator
