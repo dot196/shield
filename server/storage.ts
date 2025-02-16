@@ -1,5 +1,8 @@
 import { type CodeSnippet, type InsertCodeSnippet } from "@shared/schema";
 import { type BinaryFile, type InsertBinaryFile } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import { binaryFiles, codeSnippets } from "@shared/schema";
 
 export interface IStorage {
   saveCodeSnippet(snippet: InsertCodeSnippet): Promise<CodeSnippet>;
@@ -11,55 +14,49 @@ export interface IBinaryStorage {
   getBinaryFile(id: number): Promise<BinaryFile | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private snippets: Map<number, CodeSnippet>;
-  private currentId: number;
-
-  constructor() {
-    this.snippets = new Map();
-    this.currentId = 1;
-  }
-
+export class DatabaseStorage implements IStorage {
   async saveCodeSnippet(insertSnippet: InsertCodeSnippet): Promise<CodeSnippet> {
-    const id = this.currentId++;
-    const snippet: CodeSnippet = { ...insertSnippet, id };
-    this.snippets.set(id, snippet);
+    const [snippet] = await db
+      .insert(codeSnippets)
+      .values(insertSnippet)
+      .returning();
     return snippet;
   }
 
   async getCodeSnippet(id: number): Promise<CodeSnippet | undefined> {
-    return this.snippets.get(id);
+    const [snippet] = await db
+      .select()
+      .from(codeSnippets)
+      .where(eq(codeSnippets.id, id));
+    return snippet;
   }
 }
 
-export class MemBinaryStorage implements IBinaryStorage {
-  private files: Map<number, BinaryFile>;
-  private currentId: number;
-
-  constructor() {
-    this.files = new Map();
-    this.currentId = 1;
-  }
-
+export class DatabaseBinaryStorage implements IBinaryStorage {
   async saveBinaryFile(insertFile: InsertBinaryFile): Promise<BinaryFile> {
-    const id = this.currentId++;
     const file: BinaryFile = {
-      id,
-      fileName: insertFile.fileName,
-      fileType: insertFile.fileType,
+      ...insertFile,
+      id: 0, // Will be set by the database
       originalContent: insertFile.originalContent.toString('base64'),
       obfuscatedContent: Buffer.from([]).toString('base64'),
-      options: insertFile.options,
-      createdAt: insertFile.createdAt
     };
-    this.files.set(id, file);
-    return file;
+
+    const [savedFile] = await db
+      .insert(binaryFiles)
+      .values(file)
+      .returning();
+
+    return savedFile;
   }
 
   async getBinaryFile(id: number): Promise<BinaryFile | undefined> {
-    return this.files.get(id);
+    const [file] = await db
+      .select()
+      .from(binaryFiles)
+      .where(eq(binaryFiles.id, id));
+    return file;
   }
 }
 
-export const storage = new MemStorage();
-export const binaryStorage = new MemBinaryStorage();
+export const storage = new DatabaseStorage();
+export const binaryStorage = new DatabaseBinaryStorage();
