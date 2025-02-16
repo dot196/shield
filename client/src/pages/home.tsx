@@ -10,11 +10,25 @@ export default function Home() {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedIcon, setSelectedIcon] = useState<File | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+    }
+  };
+
+  const handleIconChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.name.toLowerCase().endsWith('.ico')) {
+      setSelectedIcon(file);
+    } else if (file) {
+      toast({
+        title: "Error",
+        description: "Please select an ICO file",
+        variant: "destructive"
+      });
     }
   };
 
@@ -41,6 +55,11 @@ export default function Home() {
     try {
       const formData = new FormData();
       formData.append("file", selectedFile);
+
+      // If an icon is selected, add it to the form data for combined processing
+      if (selectedIcon) {
+        formData.append("ico", selectedIcon);
+      }
 
       const response = await fetch("/api/obfuscate/binary", {
         method: "POST",
@@ -77,16 +96,7 @@ export default function Home() {
   };
 
   const handleAddIconToExe = async () => {
-    if (!selectedFile) {
-      toast({
-        title: "Error",
-        description: "Please select an ICO file",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!selectedFile.name.toLowerCase().endsWith('.ico')) {
+    if (!selectedIcon) {
       toast({
         title: "Error",
         description: "Please select an ICO file",
@@ -98,7 +108,7 @@ export default function Home() {
     setIsProcessing(true);
     try {
       const formData = new FormData();
-      formData.append("ico", selectedFile);
+      formData.append("ico", selectedIcon);
 
       const response = await fetch("/api/add-icon", {
         method: "POST",
@@ -162,16 +172,23 @@ export default function Home() {
 
         <Card className="max-w-2xl mx-auto border-primary/20 bg-black/50 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-primary">Upload Your File</CardTitle>
+            <CardTitle className="text-primary">Upload Your Files</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col space-y-4">
               <Input
                 type="file"
-                accept=".exe,.ico"
+                accept=".exe"
                 onChange={handleFileChange}
                 className="bg-background/50 border-primary/20 focus:border-primary w-full"
-                placeholder="Select EXE or ICO file..."
+                placeholder="Select EXE file to obfuscate..."
+              />
+              <Input
+                type="file"
+                accept=".ico"
+                onChange={handleIconChange}
+                className="bg-background/50 border-primary/20 focus:border-primary w-full"
+                placeholder="Select ICO file..."
               />
               <div className="flex flex-col space-y-2">
                 <Button 
@@ -184,7 +201,7 @@ export default function Home() {
                 </Button>
                 <Button
                   onClick={handleAddIconToExe}
-                  disabled={isProcessing || !selectedFile || !selectedFile?.name.toLowerCase().endsWith('.ico')}
+                  disabled={isProcessing || !selectedIcon}
                   className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
                 >
                   <Image className="w-4 h-4" />
