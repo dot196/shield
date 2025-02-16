@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Shield, Upload } from "lucide-react";
+import { Shield, Upload, Image } from "lucide-react";
 import { SiGithub } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,8 +67,65 @@ export default function Home() {
     }
   };
 
+  const handleIcoConversion = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "Error",
+        description: "Please select an EXE file to convert",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedFile.name.toLowerCase().endsWith('.exe')) {
+      toast({
+        title: "Error",
+        description: "Only EXE files can be converted to ICO",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch("/api/convert/ico", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${selectedFile.name.replace('.exe', '.ico')}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Success",
+        description: "EXE has been converted to ICO and downloaded!"
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to convert to ICO",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleGithubExport = () => {
-    // We'll implement GitHub export functionality here
     window.open('https://github.com/new', '_blank');
     toast({
       title: "GitHub Export",
@@ -102,7 +159,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
               <Input
                 type="file"
-                accept=".exe,.msi,.bat,.js"
+                accept=".exe,.msi,.bat,.js,.ico"
                 onChange={handleFileChange}
                 className="flex-1 bg-background/50 border-primary/20 focus:border-primary"
               />
@@ -114,6 +171,15 @@ export default function Home() {
                 >
                   <Upload className="w-4 h-4" />
                   {isProcessing ? "Processing..." : "Obfuscate"}
+                </Button>
+                <Button
+                  onClick={handleIcoConversion}
+                  disabled={isProcessing || !selectedFile || !selectedFile?.name.toLowerCase().endsWith('.exe')}
+                  variant="outline"
+                  className="border-primary/20 hover:border-primary flex items-center gap-2"
+                >
+                  <Image className="w-4 h-4" />
+                  Convert to ICO
                 </Button>
                 <Button
                   onClick={handleGithubExport}
@@ -133,6 +199,7 @@ export default function Home() {
                 <li>.msi - Windows Installers</li>
                 <li>.bat - Batch Scripts</li>
                 <li>.js - JavaScript Files</li>
+                <li>.ico - Icon Files</li>
               </ul>
             </div>
           </CardContent>
