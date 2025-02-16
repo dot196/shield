@@ -10,11 +10,25 @@ export default function Home() {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedIcon, setSelectedIcon] = useState<File | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setSelectedFile(file);
+    }
+  };
+
+  const handleIconChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.name.toLowerCase().endsWith('.ico')) {
+      setSelectedIcon(file);
+    } else if (file) {
+      toast({
+        title: "Error",
+        description: "Please select an ICO file",
+        variant: "destructive"
+      });
     }
   };
 
@@ -67,11 +81,11 @@ export default function Home() {
     }
   };
 
-  const handleIcoConversion = async () => {
-    if (!selectedFile) {
+  const handleAddIconToExe = async () => {
+    if (!selectedFile || !selectedIcon) {
       toast({
         title: "Error",
-        description: "Please select an EXE file to convert",
+        description: "Please select both an EXE file and an ICO file",
         variant: "destructive"
       });
       return;
@@ -80,7 +94,7 @@ export default function Home() {
     if (!selectedFile.name.toLowerCase().endsWith('.exe')) {
       toast({
         title: "Error",
-        description: "Only EXE files can be converted to ICO",
+        description: "Base file must be an EXE file",
         variant: "destructive"
       });
       return;
@@ -89,9 +103,10 @@ export default function Home() {
     setIsProcessing(true);
     try {
       const formData = new FormData();
-      formData.append("file", selectedFile);
+      formData.append("exe", selectedFile);
+      formData.append("ico", selectedIcon);
 
-      const response = await fetch("/api/convert/ico", {
+      const response = await fetch("/api/add-icon", {
         method: "POST",
         body: formData,
       });
@@ -104,7 +119,7 @@ export default function Home() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${selectedFile.name.replace('.exe', '.ico')}`;
+      a.download = `icon_${selectedFile.name}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -112,12 +127,12 @@ export default function Home() {
 
       toast({
         title: "Success",
-        description: "EXE has been converted to ICO and downloaded!"
+        description: "Icon has been added to the EXE file!"
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to convert to ICO",
+        description: error instanceof Error ? error.message : "Failed to add icon to EXE",
         variant: "destructive"
       });
     } finally {
@@ -153,38 +168,48 @@ export default function Home() {
 
         <Card className="max-w-2xl mx-auto border-primary/20 bg-black/50 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-primary">Upload Your File</CardTitle>
+            <CardTitle className="text-primary">Upload Your Files</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
-              <Input
-                type="file"
-                accept=".exe,.msi,.bat,.js,.ico"
-                onChange={handleFileChange}
-                className="flex-1 bg-background/50 border-primary/20 focus:border-primary"
-              />
-              <div className="flex gap-2">
+            <div className="flex flex-col space-y-4">
+              <div className="flex items-center gap-4">
+                <Input
+                  type="file"
+                  accept=".exe,.msi,.bat,.js"
+                  onChange={handleFileChange}
+                  className="flex-1 bg-background/50 border-primary/20 focus:border-primary"
+                  placeholder="Select main file..."
+                />
+                <Input
+                  type="file"
+                  accept=".ico"
+                  onChange={handleIconChange}
+                  className="flex-1 bg-background/50 border-primary/20 focus:border-primary"
+                  placeholder="Select ICO file..."
+                />
+              </div>
+              <div className="flex items-center gap-2">
                 <Button 
                   onClick={handleObfuscate} 
                   disabled={isProcessing || !selectedFile}
-                  className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+                  className="bg-primary hover:bg-primary/90 text-white flex-1 flex items-center justify-center gap-2"
                 >
                   <Upload className="w-4 h-4" />
                   {isProcessing ? "Processing..." : "Obfuscate"}
                 </Button>
                 <Button
-                  onClick={handleIcoConversion}
-                  disabled={isProcessing || !selectedFile || !selectedFile?.name.toLowerCase().endsWith('.exe')}
+                  onClick={handleAddIconToExe}
+                  disabled={isProcessing || !selectedFile || !selectedIcon}
                   variant="outline"
-                  className="border-primary/20 hover:border-primary flex items-center gap-2"
+                  className="border-primary/20 hover:border-primary flex-1 flex items-center justify-center gap-2"
                 >
                   <Image className="w-4 h-4" />
-                  Convert to ICO
+                  Add Icon to EXE
                 </Button>
                 <Button
                   onClick={handleGithubExport}
                   variant="outline"
-                  className="border-primary/20 hover:border-primary flex items-center gap-2"
+                  className="border-primary/20 hover:border-primary flex-1 flex items-center justify-center gap-2"
                 >
                   <SiGithub className="w-4 h-4" />
                   Export to GitHub
