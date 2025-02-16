@@ -1,132 +1,106 @@
 import { useState } from "react";
-import { Shield } from "lucide-react";
+import { Shield, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { CodeEditor } from "@/components/code-editor";
-import { ObfuscationOptionsPanel } from "@/components/obfuscation-options";
-import { apiRequest } from "@/lib/queryClient";
-import { type ObfuscationOptions, obfuscationOptions } from "@shared/schema";
-
-const defaultOptions: ObfuscationOptions = {
-  compact: true,
-  controlFlowFlattening: true,
-  deadCodeInjection: true,
-  stringEncryption: true,
-  rotateStringArray: true,
-  selfDefending: false,
-  renameGlobals: false,
-  renameProperties: false
-};
+import { Input } from "@/components/ui/input";
 
 export default function Home() {
   const { toast } = useToast();
-  const [sourceCode, setSourceCode] = useState("");
-  const [obfuscatedCode, setObfuscatedCode] = useState("");
-  const [options, setOptions] = useState<ObfuscationOptions>(defaultOptions);
-  const [isObfuscating, setIsObfuscating] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+    }
+  };
 
   const handleObfuscate = async () => {
-    if (!sourceCode.trim()) {
+    if (!selectedFile) {
       toast({
         title: "Error",
-        description: "Please enter some JavaScript code to obfuscate",
+        description: "Please select a file to obfuscate",
         variant: "destructive"
       });
       return;
     }
 
-    setIsObfuscating(true);
+    setIsProcessing(true);
     try {
-      const response = await apiRequest("POST", "/api/obfuscate", {
-        originalCode: sourceCode,
-        options,
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      const response = await fetch("/api/obfuscate/binary", {
+        method: "POST",
+        body: formData,
       });
-      const result = await response.json();
-      setObfuscatedCode(result.obfuscatedCode);
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      // Handle binary response
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `obfuscated_${selectedFile.name}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
       toast({
         title: "Success",
-        description: "Code has been obfuscated successfully!"
+        description: "File has been obfuscated and downloaded!"
       });
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to obfuscate code. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to obfuscate file",
         variant: "destructive"
       });
     } finally {
-      setIsObfuscating(false);
+      setIsProcessing(false);
     }
-  };
-
-  const handleDownload = () => {
-    const blob = new Blob([obfuscatedCode], { type: "text/javascript" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "obfuscated.js";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
   };
 
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="flex items-center justify-center mb-8">
         <Shield className="w-8 h-8 mr-2 text-primary" />
-        <h1 className="text-3xl font-bold">JavaScript Code Obfuscator</h1>
+        <h1 className="text-3xl font-bold">Binary Code Obfuscator</h1>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Source Code</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CodeEditor
-                value={sourceCode}
-                onChange={setSourceCode}
-              />
-            </CardContent>
-          </Card>
+      <Card className="max-w-2xl mx-auto">
+        <CardHeader>
+          <CardTitle>Upload File</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Input
+              type="file"
+              accept=".exe,.msi,.bat,.js"
+              onChange={handleFileChange}
+              className="flex-1"
+            />
+            <Button 
+              onClick={handleObfuscate} 
+              disabled={isProcessing || !selectedFile}
+              className="flex items-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              {isProcessing ? "Processing..." : "Obfuscate"}
+            </Button>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Obfuscated Code</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <CodeEditor
-                value={obfuscatedCode}
-                readOnly
-              />
-              <div className="mt-4 flex gap-4">
-                <Button 
-                  onClick={handleObfuscate} 
-                  disabled={isObfuscating}
-                >
-                  {isObfuscating ? "Obfuscating..." : "Obfuscate"}
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={handleDownload}
-                  disabled={!obfuscatedCode}
-                >
-                  Download
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="lg:col-span-1">
-          <ObfuscationOptionsPanel
-            options={options}
-            onChange={setOptions}
-          />
-        </div>
-      </div>
+          <div className="text-sm text-muted-foreground">
+            Supported file types: .exe, .msi, .bat, .js
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
