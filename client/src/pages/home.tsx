@@ -70,13 +70,18 @@ export default function Home() {
     <div className="min-h-screen bg-black">
       <div className="container mx-auto py-16 px-4">
         <div className="flex flex-col items-center justify-center mb-12 text-center">
-          <Shield className="w-16 h-16 mb-4 text-primary animate-pulse" />
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 text-transparent bg-clip-text">
-            Binary Code Obfuscator
-          </h1>
-          <p className="mt-4 text-muted-foreground max-w-md">
-            Protect your executables and scripts with advanced obfuscation technology
-          </p>
+          <Shield className="w-16 h-16 mb-6 text-primary animate-pulse" />
+          <div className="space-y-4">
+            <h1 className="text-5xl font-black tracking-tight bg-gradient-to-r from-primary via-red-500 to-primary/60 text-transparent bg-clip-text animate-gradient">
+              DelinquencyShield
+            </h1>
+            <p className="text-xl font-medium bg-gradient-to-r from-red-400 to-red-600 text-transparent bg-clip-text">
+              Advanced Binary Code Obfuscator
+            </p>
+            <p className="mt-4 text-muted-foreground max-w-md text-sm">
+              Protect your executables and scripts with military-grade obfuscation technology
+            </p>
+          </div>
         </div>
 
         <Card className="max-w-2xl mx-auto border-primary/20 bg-black/50 backdrop-blur-sm">
