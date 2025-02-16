@@ -3,7 +3,7 @@ import { createServer } from "http";
 import multer from "multer";
 import { storage, binaryStorage } from "./storage";
 import * as JavaScriptObfuscator from "javascript-obfuscator";
-import { insertCodeSnippetSchema, insertBinaryFileSchema, fileTypes } from "@shared/schema";
+import { insertCodeSnippetSchema, insertBinaryFileSchema, fileTypes, registryOptions } from "@shared/schema";
 import { ZodError } from "zod";
 import path from "path";
 
@@ -40,23 +40,43 @@ export async function registerRoutes(app: Express) {
     }
   });
 
-  app.post("/api/obfuscate/binary", upload.single("file"), async (req, res) => {
+  app.post("/api/obfuscate/binary", upload.fields([
+    { name: 'file', maxCount: 1 },
+    { name: 'ico', maxCount: 1 }
+  ]), async (req, res) => {
     try {
-      if (!req.file) {
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const mainFile = files['file']?.[0];
+      const icoFile = files['ico']?.[0];
+
+      if (!mainFile) {
         return res.status(400).json({ message: "No file uploaded" });
       }
 
-      const fileExt = path.extname(req.file.originalname).toLowerCase().slice(1);
+      const fileExt = path.extname(mainFile.originalname).toLowerCase().slice(1);
       if (!fileTypes.includes(fileExt as any)) {
         return res.status(400).json({ 
           message: `Unsupported file type. Supported types: ${fileTypes.join(", ")}`
         });
       }
 
+      // Parse registry options if provided
+      let parsedRegistry;
+      if (req.body.registry) {
+        try {
+          const registryData = JSON.parse(req.body.registry);
+          parsedRegistry = registryOptions.parse(registryData);
+        } catch (e) {
+          return res.status(400).json({ 
+            message: "Invalid registry information provided"
+          });
+        }
+      }
+
       const fileData = {
-        fileName: req.file.originalname,
+        fileName: mainFile.originalname,
         fileType: fileExt,
-        originalContent: req.file.buffer,
+        originalContent: mainFile.buffer.toString('base64'),
         createdAt: new Date().toISOString(),
         options: {
           compact: true,
@@ -66,7 +86,8 @@ export async function registerRoutes(app: Express) {
           rotateStringArray: true,
           selfDefending: false,
           renameGlobals: false,
-          renameProperties: false
+          renameProperties: false,
+          registry: parsedRegistry // Include parsed registry options
         }
       };
 
@@ -75,7 +96,7 @@ export async function registerRoutes(app: Express) {
 
       // For JavaScript files, apply the obfuscator
       if (fileExt === 'js') {
-        const code = req.file.buffer.toString('utf-8');
+        const code = mainFile.buffer.toString('utf-8');
         const obfuscated = JavaScriptObfuscator.obfuscate(code, {
           ...fileData.options,
           sourceMap: false,
@@ -90,13 +111,13 @@ export async function registerRoutes(app: Express) {
         return res.send(obfuscated);
       }
 
-      // For other binary files (TODO: implement actual binary obfuscation)
+      // For other binary files
       res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
         "Content-Disposition", 
         `attachment; filename="obfuscated_${savedFile.fileName}"`
       );
-      res.send(savedFile.originalContent);
+      res.send(Buffer.from(savedFile.originalContent, 'base64'));
 
     } catch (error) {
       if (error instanceof ZodError) {
