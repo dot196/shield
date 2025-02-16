@@ -41,7 +41,6 @@ export default function Home() {
         throw new Error(await response.text());
       }
 
-      // Handle binary response
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -68,39 +67,52 @@ export default function Home() {
   };
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex items-center justify-center mb-8">
-        <Shield className="w-8 h-8 mr-2 text-primary" />
-        <h1 className="text-3xl font-bold">Binary Code Obfuscator</h1>
+    <div className="min-h-screen bg-black">
+      <div className="container mx-auto py-16 px-4">
+        <div className="flex flex-col items-center justify-center mb-12 text-center">
+          <Shield className="w-16 h-16 mb-4 text-primary animate-pulse" />
+          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 text-transparent bg-clip-text">
+            Binary Code Obfuscator
+          </h1>
+          <p className="mt-4 text-muted-foreground max-w-md">
+            Protect your executables and scripts with advanced obfuscation technology
+          </p>
+        </div>
+
+        <Card className="max-w-2xl mx-auto border-primary/20 bg-black/50 backdrop-blur-sm">
+          <CardHeader>
+            <CardTitle className="text-primary">Upload Your File</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              <Input
+                type="file"
+                accept=".exe,.msi,.bat,.js"
+                onChange={handleFileChange}
+                className="flex-1 bg-background/50 border-primary/20 focus:border-primary"
+              />
+              <Button 
+                onClick={handleObfuscate} 
+                disabled={isProcessing || !selectedFile}
+                className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+              >
+                <Upload className="w-4 h-4" />
+                {isProcessing ? "Processing..." : "Obfuscate"}
+              </Button>
+            </div>
+
+            <div className="text-sm text-muted-foreground border border-primary/10 rounded-lg p-4 bg-black/20">
+              <p className="font-medium text-primary mb-2">Supported File Types:</p>
+              <ul className="list-disc list-inside space-y-1">
+                <li>.exe - Windows Executables</li>
+                <li>.msi - Windows Installers</li>
+                <li>.bat - Batch Scripts</li>
+                <li>.js - JavaScript Files</li>
+              </ul>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-
-      <Card className="max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle>Upload File</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-4">
-            <Input
-              type="file"
-              accept=".exe,.msi,.bat,.js"
-              onChange={handleFileChange}
-              className="flex-1"
-            />
-            <Button 
-              onClick={handleObfuscate} 
-              disabled={isProcessing || !selectedFile}
-              className="flex items-center gap-2"
-            >
-              <Upload className="w-4 h-4" />
-              {isProcessing ? "Processing..." : "Obfuscate"}
-            </Button>
-          </div>
-
-          <div className="text-sm text-muted-foreground">
-            Supported file types: .exe, .msi, .bat, .js
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }
