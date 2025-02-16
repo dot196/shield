@@ -2,7 +2,7 @@ import { pgTable, text, serial, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const fileTypes = ['exe', 'msi', 'bat', 'js', 'ico'] as const;
+export const fileTypes = ['exe', 'msi', 'bat', 'apk', 'js', 'ico'] as const;
 export type FileType = typeof fileTypes[number];
 
 export const obfuscationOptions = z.object({

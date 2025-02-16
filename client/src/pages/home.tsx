@@ -15,7 +15,17 @@ export default function Home() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      setSelectedFile(file);
+      const validTypes = ['.exe', '.msi', '.bat', '.apk'];
+      const fileExtension = file.name.toLowerCase().split('.').pop();
+      if (fileExtension && validTypes.includes(`.${fileExtension}`)) {
+        setSelectedFile(file);
+      } else {
+        toast({
+          title: "Error",
+          description: "Please select a valid file type (EXE, MSI, BAT, or APK)",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -37,15 +47,6 @@ export default function Home() {
       toast({
         title: "Error",
         description: "Please select a file to obfuscate",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!selectedFile.name.toLowerCase().endsWith('.exe')) {
-      toast({
-        title: "Error",
-        description: "Only EXE files can be obfuscated",
         variant: "destructive"
       });
       return;
@@ -179,14 +180,14 @@ export default function Home() {
                 <div className="space-y-2">
                   <Input
                     type="file"
-                    accept=".exe"
+                    accept=".exe,.msi,.bat,.apk"
                     onChange={handleFileChange}
                     className="bg-background/50 border-primary/20 focus:border-primary w-full"
-                    placeholder="Select EXE file to obfuscate..."
+                    placeholder="Select file to obfuscate..."
                   />
                   <Button 
                     onClick={handleObfuscate} 
-                    disabled={isProcessing || !selectedFile || !selectedFile?.name.toLowerCase().endsWith('.exe')}
+                    disabled={isProcessing || !selectedFile}
                     className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
                   >
                     <Upload className="w-4 h-4" />
@@ -224,6 +225,9 @@ export default function Home() {
               <p className="font-medium text-primary mb-2">Supported File Types:</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>.exe - Windows Executables</li>
+                <li>.msi - Windows Installers</li>
+                <li>.bat - Batch Scripts</li>
+                <li>.apk - Android Applications</li>
                 <li>.ico - Icon Files</li>
               </ul>
             </div>
