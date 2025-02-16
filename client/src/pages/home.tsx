@@ -10,7 +10,6 @@ export default function Home() {
   const { toast } = useToast();
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedIcon, setSelectedIcon] = useState<File | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -19,24 +18,20 @@ export default function Home() {
     }
   };
 
-  const handleIconChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file && file.name.toLowerCase().endsWith('.ico')) {
-      setSelectedIcon(file);
-    } else if (file) {
-      toast({
-        title: "Error",
-        description: "Please select an ICO file",
-        variant: "destructive"
-      });
-    }
-  };
-
   const handleObfuscate = async () => {
     if (!selectedFile) {
       toast({
         title: "Error",
         description: "Please select a file to obfuscate",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!selectedFile.name.toLowerCase().endsWith('.exe')) {
+      toast({
+        title: "Error",
+        description: "Only EXE files can be obfuscated",
         variant: "destructive"
       });
       return;
@@ -82,19 +77,19 @@ export default function Home() {
   };
 
   const handleAddIconToExe = async () => {
-    if (!selectedFile || !selectedIcon) {
+    if (!selectedFile) {
       toast({
         title: "Error",
-        description: "Please select both an EXE file and an ICO file",
+        description: "Please select an ICO file",
         variant: "destructive"
       });
       return;
     }
 
-    if (!selectedFile.name.toLowerCase().endsWith('.exe')) {
+    if (!selectedFile.name.toLowerCase().endsWith('.ico')) {
       toast({
         title: "Error",
-        description: "Base file must be an EXE file",
+        description: "Please select an ICO file",
         variant: "destructive"
       });
       return;
@@ -103,8 +98,7 @@ export default function Home() {
     setIsProcessing(true);
     try {
       const formData = new FormData();
-      formData.append("exe", selectedFile);
-      formData.append("ico", selectedIcon);
+      formData.append("ico", selectedFile);
 
       const response = await fetch("/api/add-icon", {
         method: "POST",
@@ -119,7 +113,7 @@ export default function Home() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `icon_${selectedFile.name}`;
+      a.download = `icon_modified.exe`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -168,48 +162,37 @@ export default function Home() {
 
         <Card className="max-w-2xl mx-auto border-primary/20 bg-black/50 backdrop-blur-sm">
           <CardHeader>
-            <CardTitle className="text-primary">Upload Your Files</CardTitle>
+            <CardTitle className="text-primary">Upload Your File</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex flex-col space-y-4">
-              <div className="flex items-center gap-4">
-                <Input
-                  type="file"
-                  accept=".exe,.msi,.bat,.js"
-                  onChange={handleFileChange}
-                  className="flex-1 bg-background/50 border-primary/20 focus:border-primary"
-                  placeholder="Select main file..."
-                />
-                <Input
-                  type="file"
-                  accept=".ico"
-                  onChange={handleIconChange}
-                  className="flex-1 bg-background/50 border-primary/20 focus:border-primary"
-                  placeholder="Select ICO file..."
-                />
-              </div>
+              <Input
+                type="file"
+                accept=".exe,.ico"
+                onChange={handleFileChange}
+                className="bg-background/50 border-primary/20 focus:border-primary w-full"
+                placeholder="Select EXE or ICO file..."
+              />
               <div className="flex flex-col space-y-2">
                 <Button 
                   onClick={handleObfuscate} 
-                  disabled={isProcessing || !selectedFile}
+                  disabled={isProcessing || !selectedFile || !selectedFile?.name.toLowerCase().endsWith('.exe')}
                   className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
                 >
                   <Upload className="w-4 h-4" />
-                  {isProcessing ? "Processing..." : "Obfuscate"}
+                  {isProcessing ? "Processing..." : "Obfuscate EXE"}
                 </Button>
                 <Button
                   onClick={handleAddIconToExe}
-                  disabled={isProcessing || !selectedFile || !selectedIcon}
-                  variant="outline"
-                  className="w-full border-primary/20 hover:border-primary flex items-center justify-center gap-2"
+                  disabled={isProcessing || !selectedFile || !selectedFile?.name.toLowerCase().endsWith('.ico')}
+                  className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
                 >
                   <Image className="w-4 h-4" />
-                  Add Icon to EXE
+                  Add ICO to EXE
                 </Button>
                 <Button
                   onClick={handleGithubExport}
-                  variant="outline"
-                  className="w-full border-primary/20 hover:border-primary flex items-center justify-center gap-2"
+                  className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
                 >
                   <SiGithub className="w-4 h-4" />
                   Export to GitHub
@@ -221,9 +204,6 @@ export default function Home() {
               <p className="font-medium text-primary mb-2">Supported File Types:</p>
               <ul className="list-disc list-inside space-y-1">
                 <li>.exe - Windows Executables</li>
-                <li>.msi - Windows Installers</li>
-                <li>.bat - Batch Scripts</li>
-                <li>.js - JavaScript Files</li>
                 <li>.ico - Icon Files</li>
               </ul>
             </div>
