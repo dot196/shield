@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { RegistryDialog } from "@/components/registry-dialog";
 import { ShareDialog } from "@/components/share-dialog";
 import { type RegistryOptions } from "@shared/schema";
+import { JunkPumpDialog } from "@/components/junk-pump-dialog";
 
 export default function Home() {
   const { toast } = useToast();
@@ -21,6 +22,7 @@ export default function Home() {
   const [obfuscatedFileUrl, setObfuscatedFileUrl] = useState<string>("");
   const [obfuscatedFileName, setObfuscatedFileName] = useState<string>("");
   const [pumpSize, setPumpSize] = useState<number | null>(null);
+  const [junkPumpDialogOpen, setJunkPumpDialogOpen] = useState(false);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -200,20 +202,6 @@ export default function Home() {
                   className="bg-background/50 border-primary/20 focus:border-primary w-full"
                   placeholder="Select file to obfuscate..."
                 />
-                <div className="grid grid-cols-4 items-center gap-4">
-                  <Label htmlFor="pumpSize" className="text-right text-primary">
-                    Junk Pump (MB)
-                  </Label>
-                  <Input
-                    id="pumpSize"
-                    type="number"
-                    min="0"
-                    placeholder="Enter junk size in MB"
-                    value={pumpSize || ''}
-                    onChange={(e) => setPumpSize(e.target.value ? Number(e.target.value) : null)}
-                    className="col-span-3 bg-background/50 border-primary/20 focus:border-primary"
-                  />
-                </div>
                 <Button
                   onClick={handleObfuscate}
                   disabled={isProcessing || !selectedFile}
@@ -229,6 +217,14 @@ export default function Home() {
                 >
                   <File className="w-4 h-4" />
                   {registryOptions ? "Edit Registry" : "Add Registry"}
+                </Button>
+                <Button
+                  onClick={() => setJunkPumpDialogOpen(true)}
+                  className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
+                  disabled={!selectedFile}
+                >
+                  <File className="w-4 h-4" />
+                  {pumpSize ? `Edit Junk Pump (${pumpSize}MB)` : "Add Junk Pump"}
                 </Button>
                 {obfuscatedFileUrl && (
                   <Button
@@ -289,6 +285,18 @@ export default function Home() {
           toast({
             title: "Registry Info Saved",
             description: "Registry information will be applied during obfuscation."
+          });
+        }}
+      />
+      <JunkPumpDialog
+        open={junkPumpDialogOpen}
+        onOpenChange={setJunkPumpDialogOpen}
+        onSave={(size) => {
+          setPumpSize(size);
+          setJunkPumpDialogOpen(false);
+          toast({
+            title: "Junk Pump Size Saved",
+            description: `File will be pumped to ${size}MB during obfuscation.`
           });
         }}
       />
