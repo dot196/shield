@@ -10,6 +10,8 @@ import { RegistryDialog } from "@/components/registry-dialog";
 import { ShareDialog } from "@/components/share-dialog";
 import { type RegistryOptions } from "@shared/schema";
 import { JunkPumpDialog } from "@/components/junk-pump-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from "@/components/ui/alert-dialog";
+import { features } from "@shared/schema";
 
 export default function Home() {
   const { toast } = useToast();
@@ -23,6 +25,9 @@ export default function Home() {
   const [obfuscatedFileName, setObfuscatedFileName] = useState<string>("");
   const [pumpSize, setPumpSize] = useState<number | null>(null);
   const [junkPumpDialogOpen, setJunkPumpDialogOpen] = useState(false);
+  const [authCode, setAuthCode] = useState<string | null>(null);
+  const [showPremiumAlert, setShowPremiumAlert] = useState(false);
+  const [requiredFeatures, setRequiredFeatures] = useState<string[]>([]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -54,6 +59,43 @@ export default function Home() {
     }
   };
 
+  const validateAuthCode = async (code: string) => {
+    try {
+      const response = await fetch("/api/auth/validate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to validate code");
+      }
+
+      const data = await response.json();
+      if (data.valid) {
+        setAuthCode(code);
+        toast({
+          title: "Success",
+          description: "Premium features unlocked!",
+        });
+      } else {
+        toast({
+          title: "Invalid Code",
+          description: "Please enter a valid authentication code",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to validate authentication code",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleObfuscate = async () => {
     if (!selectedFile) {
       toast({
@@ -69,6 +111,11 @@ export default function Home() {
       const formData = new FormData();
       formData.append("file", selectedFile);
 
+      const headers: HeadersInit = {};
+      if (authCode) {
+        headers['x-auth-code'] = authCode;
+      }
+
       if (selectedIcon) {
         formData.append("ico", selectedIcon);
       }
@@ -83,8 +130,16 @@ export default function Home() {
 
       const response = await fetch("/api/obfuscate/binary", {
         method: "POST",
+        headers,
         body: formData,
       });
+
+      if (response.status === 403) {
+        const data = await response.json();
+        setRequiredFeatures(data.requiredFeatures);
+        setShowPremiumAlert(true);
+        return;
+      }
 
       if (!response.ok) {
         throw new Error(await response.text());
@@ -169,6 +224,34 @@ export default function Home() {
       description: "Create a new repository and upload your obfuscated code manually for now. Full GitHub integration coming soon!",
     });
   };
+
+  const PremiumFeaturesAlert = () => (
+    <AlertDialog open={showPremiumAlert} onOpenChange={setShowPremiumAlert}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Premium Features Required</AlertDialogTitle>
+          <AlertDialogDescription>
+            The following features require a premium authentication code:
+            <ul className="list-disc list-inside mt-2">
+              {requiredFeatures.map((feature) => (
+                <li key={feature} className="capitalize">{feature}</li>
+              ))}
+            </ul>
+            <p className="mt-4">
+              Purchase a code for $10 in cryptocurrency to unlock these features.
+              Contact support for purchase information.
+            </p>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <Input
+            placeholder="Enter authentication code"
+            onChange={(e) => validateAuthCode(e.target.value)}
+          />
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
 
   return (
     <div className="min-h-screen bg-black">
@@ -273,6 +356,11 @@ export default function Home() {
                 <li>.ico - Icon Files</li>
               </ul>
             </div>
+            {authCode && (
+              <div className="text-sm text-primary border border-primary/10 rounded-lg p-4 bg-black/20">
+                <p>Premium features unlocked! 🎉</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -309,6 +397,7 @@ export default function Home() {
       <footer className="py-6 text-center text-xs text-muted-foreground">
         <p>Protected by copyright law. All rights reserved.</p>
       </footer>
+      <PremiumFeaturesAlert />
     </div>
   );
 }

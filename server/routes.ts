@@ -1,9 +1,9 @@
 import type { Express } from "express";
 import { createServer } from "http";
 import multer from "multer";
-import { storage, binaryStorage } from "./storage";
+import { storage, binaryStorage, authStorage } from "./storage";
 import * as JavaScriptObfuscator from "javascript-obfuscator";
-import { insertCodeSnippetSchema, insertBinaryFileSchema, fileTypes, registryOptions } from "@shared/schema";
+import { insertCodeSnippetSchema, insertBinaryFileSchema, fileTypes, registryOptions, features } from "@shared/schema";
 import { ZodError } from "zod";
 import path from "path";
 import { writeFileSync, unlinkSync, promises as fs } from "fs";
@@ -18,6 +18,36 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express) {
+  app.post("/api/auth/validate", async (req, res) => {
+    try {
+      const { code } = req.body;
+
+      if (!code) {
+        return res.status(400).json({ message: "Authentication code is required" });
+      }
+
+      const isValid = await authStorage.validateAuthCode(code);
+
+      if (isValid) {
+        await authStorage.markCodeAsUsed(code);
+        return res.json({ valid: true, features: features.PREMIUM });
+      }
+
+      res.json({ valid: false });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to validate code" });
+    }
+  });
+
+  app.post("/api/auth/generate", async (_req, res) => {
+    try {
+      const code = await authStorage.generateAuthCode();
+      res.json({ code });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to generate code" });
+    }
+  });
+
   app.post("/api/obfuscate", async (req, res) => {
     try {
       const { originalCode, options } = insertCodeSnippetSchema.parse(req.body);
@@ -59,25 +89,23 @@ export async function registerRoutes(app: Express) {
 
       const fileExt = path.extname(mainFile.originalname).toLowerCase().slice(1);
       if (!fileTypes.includes(fileExt as any)) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           message: `Unsupported file type. Supported types: ${fileTypes.join(", ")}`
         });
       }
 
-      // Parse registry options if provided
       let parsedRegistry;
       if (req.body.registry) {
         try {
           const registryData = JSON.parse(req.body.registry);
           parsedRegistry = registryOptions.parse(registryData);
         } catch (e) {
-          return res.status(400).json({ 
+          return res.status(400).json({
             message: "Invalid registry information provided"
           });
         }
       }
 
-      // Parse pump size if provided
       let pumpSizeMB: number | undefined;
       if (req.body.pumpSize) {
         try {
@@ -92,22 +120,17 @@ export async function registerRoutes(app: Express) {
         }
       }
 
-      // Generate temporary file paths
       const tempId = uuidv4();
       const tempInputPath = `/tmp/${tempId}_input.${fileExt}`;
       const tempOutputPath = `/tmp/${tempId}_output.${fileExt}`;
 
-      // Track temp files for cleanup
       tempFiles.push(tempInputPath, tempOutputPath);
 
-      // Write input file
       writeFileSync(tempInputPath, mainFile.buffer);
 
       let processedBuffer = mainFile.buffer;
 
-      // Process based on file type
       if (fileExt === 'js') {
-        // Handle JavaScript files with the obfuscator
         const code = mainFile.buffer.toString('utf-8');
         const obfuscated = JavaScriptObfuscator.obfuscate(code, {
           compact: true,
@@ -122,7 +145,6 @@ export async function registerRoutes(app: Express) {
 
         processedBuffer = Buffer.from(obfuscated, 'utf-8');
       } else if (fileExt === 'exe' || fileExt === 'msi') {
-        // Handle Windows executables
         const processor = new BinaryProcessor(mainFile.buffer);
 
         if (parsedRegistry) {
@@ -133,7 +155,6 @@ export async function registerRoutes(app: Express) {
           processor.setIcon(icoFile.buffer);
         }
 
-        // Apply file pumping if size is specified
         if (pumpSizeMB) {
           processor.pumpFileSize(pumpSizeMB);
         }
@@ -141,10 +162,8 @@ export async function registerRoutes(app: Express) {
         processedBuffer = processor.getBuffer();
       }
 
-      // Write the processed buffer to output file
       writeFileSync(tempOutputPath, processedBuffer);
 
-      // Save file info to database
       const fileData = {
         fileName: mainFile.originalname,
         fileType: fileExt,
@@ -167,12 +186,11 @@ export async function registerRoutes(app: Express) {
       const parsedData = insertBinaryFileSchema.parse(fileData);
       await binaryStorage.saveBinaryFile(parsedData);
 
-      // Send the processed file
       const processedFileContent = await fs.readFile(tempOutputPath);
 
       res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
-        "Content-Disposition", 
+        "Content-Disposition",
         `attachment; filename="obfuscated_${mainFile.originalname}"`
       );
       res.send(processedFileContent);
@@ -181,7 +199,6 @@ export async function registerRoutes(app: Express) {
       console.error("Error processing file:", error);
       res.status(500).json({ message: "Failed to process file" });
     } finally {
-      // Cleanup temporary files
       tempFiles.forEach(file => {
         try {
           unlinkSync(file);
