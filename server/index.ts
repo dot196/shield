@@ -70,7 +70,9 @@ app.use((req, res, next) => {
   }
 
   const PORT = process.env.PORT || 5000;
-  server.listen(PORT, () => {
-    log(`Server running in ${app.get("env")} mode on port ${PORT}`);
+  const HOST = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
+
+  server.listen(PORT, HOST, () => {
+    log(`Server running in ${app.get("env")} mode on ${HOST}:${PORT}`);
   });
 })();
