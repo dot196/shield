@@ -1,4 +1,4 @@
-import { pgTable, text, serial, jsonb, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -76,31 +76,6 @@ export const insertBinaryFileSchema = createInsertSchema(binaryFiles, {
 export type InsertBinaryFile = z.infer<typeof insertBinaryFileSchema>;
 export type BinaryFile = typeof binaryFiles.$inferSelect;
 
-export const authCodes = pgTable("auth_codes", {
-  id: serial("id").primaryKey(),
-  code: text("code").notNull().unique(),
-  used: boolean("used").notNull().default(false),
-  usedAt: timestamp("used_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertAuthCodeSchema = createInsertSchema(authCodes, {
-  code: z.string().length(16), // 16-character authentication code
-}).omit({
-  id: true,
-  used: true,
-  usedAt: true,
-  createdAt: true,
-});
-
-export type InsertAuthCode = z.infer<typeof insertAuthCodeSchema>;
-export type AuthCode = typeof authCodes.$inferSelect;
-
-export const features = {
-  FREE: ['obfuscate', 'share', 'download'],
-  PREMIUM: ['registry', 'junkPump', 'icon']
-} as const;
-
 export const codeSnippets = pgTable("code_snippets", {
   id: serial("id").primaryKey(),
   originalCode: text("original_code").notNull(),
@@ -111,3 +86,8 @@ export const codeSnippets = pgTable("code_snippets", {
 export const insertCodeSnippetSchema = createInsertSchema(codeSnippets);
 export type InsertCodeSnippet = z.infer<typeof insertCodeSnippetSchema>;
 export type CodeSnippet = typeof codeSnippets.$inferSelect;
+
+export const features = {
+  FREE: ['obfuscate', 'share', 'download'],
+  PREMIUM: ['registry', 'junkPump', 'icon']
+} as const;
