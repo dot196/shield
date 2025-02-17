@@ -27,7 +27,7 @@ interface RegistryDialogProps {
 }
 
 export function RegistryDialog({ open, onOpenChange, onSave }: RegistryDialogProps) {
-  const [profile, setProfile] = useState<"custom" | "google" | "microsoft">("custom");
+  const [profile, setProfile] = useState<"custom" | keyof typeof predefinedProfiles>("custom");
   const [options, setOptions] = useState<RegistryOptions>({
     companyName: "",
     productName: "",
@@ -39,7 +39,7 @@ export function RegistryDialog({ open, onOpenChange, onSave }: RegistryDialogPro
     comments: ""
   });
 
-  const handleProfileChange = (value: "custom" | "google" | "microsoft") => {
+  const handleProfileChange = (value: "custom" | keyof typeof predefinedProfiles) => {
     setProfile(value);
     if (value !== "custom") {
       setOptions(predefinedProfiles[value]);
@@ -62,7 +62,7 @@ export function RegistryDialog({ open, onOpenChange, onSave }: RegistryDialogPro
             </Label>
             <Select
               value={profile}
-              onValueChange={(value: "custom" | "google" | "microsoft") => handleProfileChange(value)}
+              onValueChange={(value: typeof profile) => handleProfileChange(value)}
             >
               <SelectTrigger className="col-span-3">
                 <SelectValue placeholder="Select a profile" />
@@ -71,6 +71,10 @@ export function RegistryDialog({ open, onOpenChange, onSave }: RegistryDialogPro
                 <SelectItem value="custom">Custom</SelectItem>
                 <SelectItem value="google">Google</SelectItem>
                 <SelectItem value="microsoft">Microsoft</SelectItem>
+                <SelectItem value="apple">Apple</SelectItem>
+                <SelectItem value="adobe">Adobe</SelectItem>
+                <SelectItem value="oracle">Oracle</SelectItem>
+                <SelectItem value="amazon">Amazon AWS</SelectItem>
               </SelectContent>
             </Select>
           </div>

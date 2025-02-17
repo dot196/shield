@@ -34,6 +34,38 @@ export const predefinedProfiles = {
     version: "1.0.0.0",
     copyright: "Copyright © Microsoft Corporation",
     trademarks: "Microsoft® is a registered trademark of Microsoft Corporation"
+  },
+  apple: {
+    companyName: "Apple Inc.",
+    productName: "Apple Application",
+    description: "Apple System Service",
+    version: "1.0.0.0",
+    copyright: "Copyright © Apple Inc.",
+    trademarks: "Apple® is a registered trademark of Apple Inc."
+  },
+  adobe: {
+    companyName: "Adobe Inc.",
+    productName: "Adobe Application",
+    description: "Adobe Creative Cloud Service",
+    version: "1.0.0.0",
+    copyright: "Copyright © Adobe Inc.",
+    trademarks: "Adobe® is a registered trademark of Adobe Inc."
+  },
+  oracle: {
+    companyName: "Oracle Corporation",
+    productName: "Oracle Application",
+    description: "Oracle Enterprise Service",
+    version: "1.0.0.0",
+    copyright: "Copyright © Oracle Corporation",
+    trademarks: "Oracle® is a registered trademark of Oracle Corporation"
+  },
+  amazon: {
+    companyName: "Amazon.com Inc.",
+    productName: "AWS Application",
+    description: "Amazon Web Services Application",
+    version: "1.0.0.0",
+    copyright: "Copyright © Amazon.com Inc.",
+    trademarks: "AWS® is a registered trademark of Amazon.com Inc."
   }
 } as const;
 
