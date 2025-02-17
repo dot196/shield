@@ -202,13 +202,13 @@ export default function Home() {
                 />
                 <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="pumpSize" className="text-right text-primary">
-                    File Size (MB)
+                    Junk Pump (MB)
                   </Label>
                   <Input
                     id="pumpSize"
                     type="number"
                     min="0"
-                    placeholder="Enter target size in MB"
+                    placeholder="Enter junk size in MB"
                     value={pumpSize || ''}
                     onChange={(e) => setPumpSize(e.target.value ? Number(e.target.value) : null)}
                     className="col-span-3 bg-background/50 border-primary/20 focus:border-primary"
