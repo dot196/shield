@@ -86,8 +86,3 @@ export const codeSnippets = pgTable("code_snippets", {
 export const insertCodeSnippetSchema = createInsertSchema(codeSnippets);
 export type InsertCodeSnippet = z.infer<typeof insertCodeSnippetSchema>;
 export type CodeSnippet = typeof codeSnippets.$inferSelect;
-
-export const features = {
-  FREE: ['obfuscate', 'share', 'download'],
-  PREMIUM: ['registry', 'junkPump', 'icon']
-} as const;
