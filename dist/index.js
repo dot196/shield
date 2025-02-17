@@ -1,3 +1,9 @@
+var __defProp = Object.defineProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
+
 // server/index.ts
 import express2 from "express";
 
@@ -5,60 +11,55 @@ import express2 from "express";
 import { createServer } from "http";
 import multer from "multer";
 
-// server/storage.ts
-var MemStorage = class {
-  snippets;
-  currentId;
-  constructor() {
-    this.snippets = /* @__PURE__ */ new Map();
-    this.currentId = 1;
-  }
-  async saveCodeSnippet(insertSnippet) {
-    const id = this.currentId++;
-    const snippet = { ...insertSnippet, id };
-    this.snippets.set(id, snippet);
-    return snippet;
-  }
-  async getCodeSnippet(id) {
-    return this.snippets.get(id);
-  }
-};
-var MemBinaryStorage = class {
-  files;
-  currentId;
-  constructor() {
-    this.files = /* @__PURE__ */ new Map();
-    this.currentId = 1;
-  }
-  async saveBinaryFile(insertFile) {
-    const id = this.currentId++;
-    const file = {
-      id,
-      fileName: insertFile.fileName,
-      fileType: insertFile.fileType,
-      originalContent: insertFile.originalContent.toString("base64"),
-      obfuscatedContent: Buffer.from([]).toString("base64"),
-      options: insertFile.options,
-      createdAt: insertFile.createdAt
-    };
-    this.files.set(id, file);
-    return file;
-  }
-  async getBinaryFile(id) {
-    return this.files.get(id);
-  }
-};
-var storage = new MemStorage();
-var binaryStorage = new MemBinaryStorage();
-
-// server/routes.ts
-import * as JavaScriptObfuscator from "javascript-obfuscator";
+// server/db.ts
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import ws from "ws";
 
 // shared/schema.ts
+var schema_exports = {};
+__export(schema_exports, {
+  binaryFiles: () => binaryFiles,
+  codeSnippets: () => codeSnippets,
+  fileTypes: () => fileTypes,
+  insertBinaryFileSchema: () => insertBinaryFileSchema,
+  insertCodeSnippetSchema: () => insertCodeSnippetSchema,
+  obfuscationOptions: () => obfuscationOptions,
+  predefinedProfiles: () => predefinedProfiles,
+  registryOptions: () => registryOptions
+});
 import { pgTable, text, serial, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
-var fileTypes = ["exe", "msi", "bat", "js"];
+var fileTypes = ["exe", "msi", "bat", "apk", "js", "ico"];
+var registryOptions = z.object({
+  companyName: z.string(),
+  productName: z.string(),
+  description: z.string(),
+  version: z.string(),
+  copyright: z.string(),
+  originalFilename: z.string().optional(),
+  trademarks: z.string().optional(),
+  comments: z.string().optional()
+});
+var predefinedProfiles = {
+  google: {
+    companyName: "Google LLC",
+    productName: "Google Application",
+    description: "Google Application Service",
+    version: "1.0.0.0",
+    copyright: "Copyright \xA9 Google LLC",
+    trademarks: "Google\u2122 is a trademark of Google LLC"
+  },
+  microsoft: {
+    companyName: "Microsoft Corporation",
+    productName: "Microsoft Application",
+    description: "Microsoft Windows Application",
+    version: "1.0.0.0",
+    copyright: "Copyright \xA9 Microsoft Corporation",
+    trademarks: "Microsoft\xAE is a registered trademark of Microsoft Corporation"
+  }
+};
 var obfuscationOptions = z.object({
   compact: z.boolean().default(true),
   controlFlowFlattening: z.boolean().default(true),
@@ -67,7 +68,9 @@ var obfuscationOptions = z.object({
   rotateStringArray: z.boolean().default(true),
   selfDefending: z.boolean().default(false),
   renameGlobals: z.boolean().default(false),
-  renameProperties: z.boolean().default(false)
+  renameProperties: z.boolean().default(false),
+  filePumpSizeMB: z.number().min(0).optional(),
+  registry: registryOptions.optional()
 });
 var binaryFiles = pgTable("binary_files", {
   id: serial("id").primaryKey(),
@@ -81,7 +84,7 @@ var binaryFiles = pgTable("binary_files", {
 var insertBinaryFileSchema = createInsertSchema(binaryFiles, {
   fileName: z.string(),
   fileType: z.string(),
-  originalContent: z.instanceof(Buffer),
+  originalContent: z.string(),
   options: obfuscationOptions,
   createdAt: z.string()
 }).omit({
@@ -91,14 +94,126 @@ var insertBinaryFileSchema = createInsertSchema(binaryFiles, {
 var codeSnippets = pgTable("code_snippets", {
   id: serial("id").primaryKey(),
   originalCode: text("original_code").notNull(),
-  obfuscatedCode: text("obfuscated_code").notNull(),
+  obfuscatedCode: text("obfuscated_content").notNull(),
   options: jsonb("options").notNull().$type()
 });
 var insertCodeSnippetSchema = createInsertSchema(codeSnippets);
 
+// server/db.ts
+neonConfig.webSocketConstructor = ws;
+if (!process.env.DATABASE_URL) {
+  throw new Error(
+    "DATABASE_URL must be set. Did you forget to provision a database?"
+  );
+}
+var pool = new Pool({ connectionString: process.env.DATABASE_URL });
+var db = drizzle({ client: pool, schema: schema_exports });
+
+// server/storage.ts
+import { eq } from "drizzle-orm";
+var DatabaseStorage = class {
+  async saveCodeSnippet(insertSnippet) {
+    const [snippet] = await db.insert(codeSnippets).values(insertSnippet).returning();
+    return snippet;
+  }
+  async getCodeSnippet(id) {
+    const [snippet] = await db.select().from(codeSnippets).where(eq(codeSnippets.id, id));
+    return snippet;
+  }
+};
+var DatabaseBinaryStorage = class {
+  async saveBinaryFile(insertFile) {
+    const [savedFile] = await db.insert(binaryFiles).values({
+      ...insertFile,
+      obfuscatedContent: ""
+      // Will be set during obfuscation
+    }).returning();
+    return savedFile;
+  }
+  async getBinaryFile(id) {
+    const [file] = await db.select().from(binaryFiles).where(eq(binaryFiles.id, id));
+    return file;
+  }
+};
+var storage = new DatabaseStorage();
+var binaryStorage = new DatabaseBinaryStorage();
+
 // server/routes.ts
+import * as JavaScriptObfuscator from "javascript-obfuscator";
 import { ZodError } from "zod";
 import path from "path";
+import { writeFileSync, unlinkSync, promises as fs } from "fs";
+import { v4 as uuidv4 } from "uuid";
+
+// server/utils/binary-processor.ts
+var BinaryProcessor = class {
+  buffer;
+  constructor(buffer) {
+    this.buffer = buffer;
+  }
+  setVersionInfo(info) {
+    return;
+  }
+  setIcon(iconBuffer) {
+    return;
+  }
+  pumpFileSize(targetSizeMB) {
+    const currentSizeBytes = this.buffer.length;
+    const targetSizeBytes = targetSizeMB * 1024 * 1024;
+    if (targetSizeBytes <= currentSizeBytes) {
+      return;
+    }
+    const bytesToAdd = targetSizeBytes - currentSizeBytes;
+    const marker = Buffer.from("DLINQNT_PUMP_DATA");
+    const randomData = Buffer.alloc(bytesToAdd - marker.length);
+    const junkPatterns = [
+      "function ",
+      "var ",
+      "const ",
+      "let ",
+      "if(",
+      "while(",
+      "return ",
+      "console.log(",
+      "{ ",
+      "} ",
+      ";",
+      "\n"
+    ];
+    let position = 0;
+    while (position < randomData.length) {
+      const pattern = junkPatterns[Math.floor(Math.random() * junkPatterns.length)];
+      const patternBuffer = Buffer.from(pattern);
+      const remainingSpace = randomData.length - position;
+      if (remainingSpace >= patternBuffer.length) {
+        patternBuffer.copy(randomData, position);
+        position += patternBuffer.length;
+      } else {
+        break;
+      }
+    }
+    for (let i = position; i < randomData.length; i++) {
+      randomData[i] = Math.floor(Math.random() * 256);
+    }
+    this.buffer = Buffer.concat([this.buffer, marker, randomData]);
+  }
+  getBuffer() {
+    return this.buffer;
+  }
+  static fromRegistry(registry) {
+    return {
+      companyName: registry.companyName,
+      productName: registry.productName,
+      fileDescription: registry.description,
+      fileVersion: registry.version,
+      productVersion: registry.version,
+      legalCopyright: registry.copyright,
+      legalTrademarks: registry.trademarks
+    };
+  }
+};
+
+// server/routes.ts
 var upload = multer({
   storage: multer.memoryStorage(),
   limits: {
@@ -129,21 +244,85 @@ async function registerRoutes(app2) {
       }
     }
   });
-  app2.post("/api/obfuscate/binary", upload.single("file"), async (req, res) => {
+  app2.post("/api/obfuscate/binary", upload.fields([
+    { name: "file", maxCount: 1 },
+    { name: "ico", maxCount: 1 }
+  ]), async (req, res) => {
+    const tempFiles = [];
     try {
-      if (!req.file) {
+      const files = req.files;
+      const mainFile = files["file"]?.[0];
+      const icoFile = files["ico"]?.[0];
+      if (!mainFile) {
         return res.status(400).json({ message: "No file uploaded" });
       }
-      const fileExt = path.extname(req.file.originalname).toLowerCase().slice(1);
+      const fileExt = path.extname(mainFile.originalname).toLowerCase().slice(1);
       if (!fileTypes.includes(fileExt)) {
         return res.status(400).json({
           message: `Unsupported file type. Supported types: ${fileTypes.join(", ")}`
         });
       }
+      let parsedRegistry;
+      if (req.body.registry) {
+        try {
+          const registryData = JSON.parse(req.body.registry);
+          parsedRegistry = registryOptions.parse(registryData);
+        } catch (e) {
+          return res.status(400).json({
+            message: "Invalid registry information provided"
+          });
+        }
+      }
+      let pumpSizeMB;
+      if (req.body.pumpSize) {
+        try {
+          pumpSizeMB = parseInt(req.body.pumpSize);
+          if (isNaN(pumpSizeMB) || pumpSizeMB < 0) {
+            throw new Error("Invalid pump size");
+          }
+        } catch (e) {
+          return res.status(400).json({
+            message: "Invalid file pump size provided"
+          });
+        }
+      }
+      const tempId = uuidv4();
+      const tempInputPath = `/tmp/${tempId}_input.${fileExt}`;
+      const tempOutputPath = `/tmp/${tempId}_output.${fileExt}`;
+      tempFiles.push(tempInputPath, tempOutputPath);
+      writeFileSync(tempInputPath, mainFile.buffer);
+      let processedBuffer = mainFile.buffer;
+      if (fileExt === "js") {
+        const code = mainFile.buffer.toString("utf-8");
+        const obfuscated = JavaScriptObfuscator.obfuscate(code, {
+          compact: true,
+          controlFlowFlattening: true,
+          deadCodeInjection: true,
+          stringEncryption: true,
+          rotateStringArray: true,
+          selfDefending: false,
+          sourceMap: false,
+          target: "browser"
+        }).getObfuscatedCode();
+        processedBuffer = Buffer.from(obfuscated, "utf-8");
+      } else if (fileExt === "exe" || fileExt === "msi") {
+        const processor = new BinaryProcessor(mainFile.buffer);
+        if (parsedRegistry) {
+          processor.setVersionInfo(BinaryProcessor.fromRegistry(parsedRegistry));
+        }
+        if (icoFile && fileExt === "exe") {
+          processor.setIcon(icoFile.buffer);
+        }
+        if (pumpSizeMB) {
+          processor.pumpFileSize(pumpSizeMB);
+        }
+        processedBuffer = processor.getBuffer();
+      }
+      writeFileSync(tempOutputPath, processedBuffer);
       const fileData = {
-        fileName: req.file.originalname,
+        fileName: mainFile.originalname,
         fileType: fileExt,
-        originalContent: req.file.buffer,
+        originalContent: mainFile.buffer.toString("base64"),
         createdAt: (/* @__PURE__ */ new Date()).toISOString(),
         options: {
           compact: true,
@@ -153,38 +332,31 @@ async function registerRoutes(app2) {
           rotateStringArray: true,
           selfDefending: false,
           renameGlobals: false,
-          renameProperties: false
+          renameProperties: false,
+          filePumpSizeMB: pumpSizeMB,
+          registry: parsedRegistry
         }
       };
       const parsedData = insertBinaryFileSchema.parse(fileData);
-      const savedFile = await binaryStorage.saveBinaryFile(parsedData);
-      if (fileExt === "js") {
-        const code = req.file.buffer.toString("utf-8");
-        const obfuscated = JavaScriptObfuscator.obfuscate(code, {
-          ...fileData.options,
-          sourceMap: false,
-          target: "browser"
-        }).getObfuscatedCode();
-        res.setHeader("Content-Type", "application/javascript");
-        res.setHeader(
-          "Content-Disposition",
-          `attachment; filename="obfuscated_${savedFile.fileName}"`
-        );
-        return res.send(obfuscated);
-      }
+      await binaryStorage.saveBinaryFile(parsedData);
+      const processedFileContent = await fs.readFile(tempOutputPath);
       res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="obfuscated_${savedFile.fileName}"`
+        `attachment; filename="obfuscated_${mainFile.originalname}"`
       );
-      res.send(savedFile.originalContent);
+      res.send(processedFileContent);
     } catch (error) {
-      if (error instanceof ZodError) {
-        res.status(400).json({ message: "Invalid input", errors: error.errors });
-      } else {
-        console.error("Error processing file:", error);
-        res.status(500).json({ message: "Failed to process file" });
-      }
+      console.error("Error processing file:", error);
+      res.status(500).json({ message: "Failed to process file" });
+    } finally {
+      tempFiles.forEach((file) => {
+        try {
+          unlinkSync(file);
+        } catch (e) {
+          console.error(`Failed to delete temporary file ${file}:`, e);
+        }
+      });
     }
   });
   const httpServer = createServer(app2);
@@ -193,7 +365,7 @@ async function registerRoutes(app2) {
 
 // server/vite.ts
 import express from "express";
-import fs from "fs";
+import fs2 from "fs";
 import path3, { dirname as dirname2 } from "path";
 import { fileURLToPath as fileURLToPath2 } from "url";
 import { createServer as createViteServer, createLogger } from "vite";
@@ -274,7 +446,7 @@ async function setupVite(app2, server) {
         "client",
         "index.html"
       );
-      let template = await fs.promises.readFile(clientTemplate, "utf-8");
+      let template = await fs2.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`
@@ -289,7 +461,7 @@ async function setupVite(app2, server) {
 }
 function serveStatic(app2) {
   const distPath = path3.resolve(__dirname2, "public");
-  if (!fs.existsSync(distPath)) {
+  if (!fs2.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
@@ -354,6 +526,6 @@ app.use((req, res, next) => {
   const PORT = process.env.PORT || 5e3;
   const HOST = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
   server.listen(PORT, HOST, () => {
-    log(`Server running in ${app.get("env")} mode on port ${PORT}`);
+    log(`Server running in ${app.get("env")} mode on ${HOST}:${PORT}`);
   });
 })();
