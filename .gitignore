@@ -44,5 +44,23 @@ pids
 *.seed
 *.pid.lock
 
-# Previous entries (from original, not explicitly replaced)
+# Database
+*.sqlite
+*.sqlite3
+
+# Deployment
+.vercel
+.netlify
+.next
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Previous entries
 *.tar.gz
