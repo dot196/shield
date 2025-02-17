@@ -8,6 +8,7 @@ import {
   SiTelegram
 } from "react-icons/si";
 import { Download } from "lucide-react";
+import React from 'react';
 
 interface ShareDialogProps {
   open: boolean;
@@ -20,12 +21,40 @@ export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDial
   // Create a shareable message that includes the website URL
   const shareText = `Check out my obfuscated file ${fileName} using Dlinqnt Shield!`;
   const websiteUrl = window.location.origin;
+  const appDescription = "Dlinqnt Shield - Advanced binary code obfuscator protecting your executables with military-grade technology";
   const encodedText = encodeURIComponent(shareText);
   const encodedUrl = encodeURIComponent(websiteUrl);
+  const encodedDescription = encodeURIComponent(appDescription);
+
+  // Update head meta tags for social media sharing
+  React.useEffect(() => {
+    if (open) {
+      const meta = document.createElement('meta');
+      meta.name = 'description';
+      meta.content = appDescription;
+      document.head.appendChild(meta);
+
+      const ogTitle = document.createElement('meta');
+      ogTitle.property = 'og:title';
+      ogTitle.content = 'Dlinqnt Shield';
+      document.head.appendChild(ogTitle);
+
+      const ogDesc = document.createElement('meta');
+      ogDesc.property = 'og:description';
+      ogDesc.content = appDescription;
+      document.head.appendChild(ogDesc);
+
+      return () => {
+        document.head.removeChild(meta);
+        document.head.removeChild(ogTitle);
+        document.head.removeChild(ogDesc);
+      };
+    }
+  }, [open]);
 
   const shareLinks = {
     twitter: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
-    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
+    linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}&summary=${encodedDescription}`,
     facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`,
     reddit: `https://reddit.com/submit?url=${encodedUrl}&title=${encodedText}`,
     telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`
@@ -37,12 +66,16 @@ export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDial
   };
 
   const handleDownload = () => {
-    const a = document.createElement("a");
-    a.href = fileUrl;
-    a.download = fileName;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    // Create a temporary link element
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = fileName; // Set the download attribute
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click(); // Trigger the download
+    document.body.removeChild(link);
+    URL.revokeObjectURL(fileUrl); // Clean up the URL object
+    onOpenChange(false);
   };
 
   return (
