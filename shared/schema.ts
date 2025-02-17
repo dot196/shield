@@ -46,6 +46,7 @@ export const obfuscationOptions = z.object({
   selfDefending: z.boolean().default(false),
   renameGlobals: z.boolean().default(false),
   renameProperties: z.boolean().default(false),
+  filePumpSizeMB: z.number().min(0).optional(),
   registry: registryOptions.optional()
 });
 
@@ -64,7 +65,7 @@ export const binaryFiles = pgTable("binary_files", {
 export const insertBinaryFileSchema = createInsertSchema(binaryFiles, {
   fileName: z.string(),
   fileType: z.string(),
-  originalContent: z.string(), 
+  originalContent: z.string(),
   options: obfuscationOptions,
   createdAt: z.string(),
 }).omit({

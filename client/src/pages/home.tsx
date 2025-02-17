@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { RegistryDialog } from "@/components/registry-dialog";
 import { ShareDialog } from "@/components/share-dialog";
 import { type RegistryOptions } from "@shared/schema";
@@ -19,6 +20,7 @@ export default function Home() {
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [obfuscatedFileUrl, setObfuscatedFileUrl] = useState<string>("");
   const [obfuscatedFileName, setObfuscatedFileName] = useState<string>("");
+  const [pumpSize, setPumpSize] = useState<number | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -71,6 +73,10 @@ export default function Home() {
 
       if (registryOptions) {
         formData.append("registry", JSON.stringify(registryOptions));
+      }
+
+      if (pumpSize && pumpSize > 0) {
+        formData.append("pumpSize", pumpSize.toString());
       }
 
       const response = await fetch("/api/obfuscate/binary", {
@@ -194,6 +200,20 @@ export default function Home() {
                   className="bg-background/50 border-primary/20 focus:border-primary w-full"
                   placeholder="Select file to obfuscate..."
                 />
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="pumpSize" className="text-right text-primary">
+                    File Size (MB)
+                  </Label>
+                  <Input
+                    id="pumpSize"
+                    type="number"
+                    min="0"
+                    placeholder="Enter target size in MB"
+                    value={pumpSize || ''}
+                    onChange={(e) => setPumpSize(e.target.value ? Number(e.target.value) : null)}
+                    className="col-span-3 bg-background/50 border-primary/20 focus:border-primary"
+                  />
+                </div>
                 <Button
                   onClick={handleObfuscate}
                   disabled={isProcessing || !selectedFile}

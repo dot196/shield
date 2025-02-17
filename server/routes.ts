@@ -77,6 +77,21 @@ export async function registerRoutes(app: Express) {
         }
       }
 
+      // Parse pump size if provided
+      let pumpSizeMB: number | undefined;
+      if (req.body.pumpSize) {
+        try {
+          pumpSizeMB = parseInt(req.body.pumpSize);
+          if (isNaN(pumpSizeMB) || pumpSizeMB < 0) {
+            throw new Error("Invalid pump size");
+          }
+        } catch (e) {
+          return res.status(400).json({
+            message: "Invalid file pump size provided"
+          });
+        }
+      }
+
       // Generate temporary file paths
       const tempId = uuidv4();
       const tempInputPath = `/tmp/${tempId}_input.${fileExt}`;
@@ -118,6 +133,11 @@ export async function registerRoutes(app: Express) {
           processor.setIcon(icoFile.buffer);
         }
 
+        // Apply file pumping if size is specified
+        if (pumpSizeMB) {
+          processor.pumpFileSize(pumpSizeMB);
+        }
+
         processedBuffer = processor.getBuffer();
       }
 
@@ -139,6 +159,7 @@ export async function registerRoutes(app: Express) {
           selfDefending: false,
           renameGlobals: false,
           renameProperties: false,
+          filePumpSizeMB: pumpSizeMB,
           registry: parsedRegistry
         }
       };
