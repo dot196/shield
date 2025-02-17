@@ -82,25 +82,23 @@ export default function Home() {
         throw new Error(await response.text());
       }
 
+      // Get the blob and create a direct download link
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
       const fileName = `obfuscated_${selectedFile.name}`;
 
-      // Save the URL and filename for sharing
+      // Create a temporary URL for the blob
+      const url = window.URL.createObjectURL(blob);
+
+      // Open in new tab for download
+      window.open(url, '_blank');
+
+      // Save URL for sharing
       setObfuscatedFileUrl(url);
       setObfuscatedFileName(fileName);
 
-      // Download the file
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-
       toast({
         title: "Success",
-        description: "File has been obfuscated and downloaded!"
+        description: "File has been obfuscated! Download should begin automatically."
       });
 
       // Open share dialog after successful obfuscation
@@ -206,8 +204,8 @@ export default function Home() {
                   placeholder="Select file to obfuscate..."
                 />
                 <div className="flex gap-2">
-                  <Button 
-                    onClick={handleObfuscate} 
+                  <Button
+                    onClick={handleObfuscate}
                     disabled={isProcessing || !selectedFile}
                     className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
                   >

@@ -21,7 +21,7 @@ export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDial
   // Create a shareable message that includes the website URL
   const shareText = `Check out my obfuscated file ${fileName} using Dlinqnt Shield!`;
   const websiteUrl = window.location.origin;
-  const appDescription = "Dlinqnt Shield - Advanced binary code obfuscator protecting your executables with military-grade technology";
+  const appDescription = "Dlinqnt Shield - Advanced binary code obfuscator protecting your executables with military-grade technology. Secure your software with enterprise-level obfuscation, registry customization, and seamless social sharing.";
   const encodedText = encodeURIComponent(shareText);
   const encodedUrl = encodeURIComponent(websiteUrl);
   const encodedDescription = encodeURIComponent(appDescription);
@@ -29,25 +29,34 @@ export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDial
   // Update head meta tags for social media sharing
   React.useEffect(() => {
     if (open) {
-      const meta = document.createElement('meta');
-      meta.name = 'description';
-      meta.content = appDescription;
-      document.head.appendChild(meta);
+      // Basic meta tags
+      const metaTags = [
+        { name: 'description', content: appDescription },
+        { property: 'og:title', content: 'Dlinqnt Shield - Advanced Binary Obfuscator' },
+        { property: 'og:description', content: appDescription },
+        { property: 'og:type', content: 'website' },
+        { property: 'og:url', content: websiteUrl },
+        { property: 'og:image', content: `${websiteUrl}/shield-icon.svg` },
+        { property: 'og:image:type', content: 'image/svg+xml' },
+        { property: 'og:image:width', content: '1200' },
+        { property: 'og:image:height', content: '630' },
+        { name: 'twitter:card', content: 'summary_large_image' },
+        { name: 'twitter:title', content: 'Dlinqnt Shield - Advanced Binary Obfuscator' },
+        { name: 'twitter:description', content: appDescription },
+        { name: 'twitter:image', content: `${websiteUrl}/shield-icon.svg` }
+      ];
 
-      const ogTitle = document.createElement('meta');
-      ogTitle.property = 'og:title';
-      ogTitle.content = 'Dlinqnt Shield';
-      document.head.appendChild(ogTitle);
-
-      const ogDesc = document.createElement('meta');
-      ogDesc.property = 'og:description';
-      ogDesc.content = appDescription;
-      document.head.appendChild(ogDesc);
+      const addedTags = metaTags.map(tag => {
+        const meta = document.createElement('meta');
+        Object.entries(tag).forEach(([key, value]) => {
+          meta.setAttribute(key, value);
+        });
+        document.head.appendChild(meta);
+        return meta;
+      });
 
       return () => {
-        document.head.removeChild(meta);
-        document.head.removeChild(ogTitle);
-        document.head.removeChild(ogDesc);
+        addedTags.forEach(tag => document.head.removeChild(tag));
       };
     }
   }, [open]);
@@ -66,15 +75,8 @@ export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDial
   };
 
   const handleDownload = () => {
-    // Create a temporary link element
-    const link = document.createElement('a');
-    link.href = fileUrl;
-    link.download = fileName; // Set the download attribute
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click(); // Trigger the download
-    document.body.removeChild(link);
-    URL.revokeObjectURL(fileUrl); // Clean up the URL object
+    // Open the file URL in a new tab to trigger browser download
+    window.open(fileUrl, '_blank');
     onOpenChange(false);
   };
 
