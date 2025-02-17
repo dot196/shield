@@ -51,7 +51,7 @@ export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDial
         <DialogHeader>
           <DialogTitle className="text-primary">Share Your File</DialogTitle>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-4 py-4">
+        <div className="flex flex-col space-y-2 py-4">
           <Button
             onClick={() => handleShare('twitter')}
             className="bg-[#000000] hover:bg-[#000000]/90 text-white flex items-center justify-center gap-2"
