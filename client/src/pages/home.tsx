@@ -180,10 +180,13 @@ export default function Home() {
               Dlinqnt Shield
             </h1>
             <p className="text-xl font-medium bg-gradient-to-r from-red-400 to-red-600 text-transparent bg-clip-text">
-              Advanced Binary Code Obfuscator
+              Advanced Binary Protection Technology
             </p>
             <p className="mt-4 text-muted-foreground max-w-md text-sm">
-              Protect your executables and scripts with military-grade obfuscation technology
+              Protected by copyright © 2025 Cooper Dignan. Red Shield™ is a registered trademark.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              27 Booyong Drive, Eyre, Adelaide 5121
             </p>
           </div>
         </div>
@@ -306,6 +309,10 @@ export default function Home() {
         fileUrl={obfuscatedFileUrl}
         fileName={obfuscatedFileName}
       />
+      <footer className="py-6 text-center text-xs text-muted-foreground">
+        <p>Copyright © 2025 Cooper Dignan. All rights reserved.</p>
+        <p>Unauthorized reproduction or distribution of this application or any portion of it may result in severe civil and criminal penalties.</p>
+      </footer>
     </div>
   );
 }

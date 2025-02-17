@@ -18,10 +18,9 @@ interface ShareDialogProps {
 }
 
 export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDialogProps) {
-  // Create a shareable message that includes the website URL
-  const shareText = `Check out my obfuscated file ${fileName} using Dlinqnt Shield!`;
-  const websiteUrl = window.location.origin;
-  const appDescription = "Dlinqnt Shield - Advanced binary code obfuscator protecting your executables with military-grade technology. Secure your software with enterprise-level obfuscation, registry customization, and seamless social sharing.";
+  const shareText = `Check out my protected file ${fileName} using Dlinqnt Shield - Advanced Binary Protection Technology`;
+  const websiteUrl = "https://dlinqnt-shield.replit.app";
+  const appDescription = "Dlinqnt Shield - Advanced binary code obfuscator with military-grade protection technology. © 2025 Cooper Dignan. Red Shield™ is a registered trademark. Protected by copyright law.";
   const encodedText = encodeURIComponent(shareText);
   const encodedUrl = encodeURIComponent(websiteUrl);
   const encodedDescription = encodeURIComponent(appDescription);
