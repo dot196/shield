@@ -82,17 +82,10 @@ export default function Home() {
         throw new Error(await response.text());
       }
 
-      // Get the blob and create a direct download link
       const blob = await response.blob();
       const fileName = `obfuscated_${selectedFile.name}`;
-
-      // Create a temporary URL for the blob
       const url = window.URL.createObjectURL(blob);
-
-      // Open in new tab for download
       window.open(url, '_blank');
-
-      // Save URL for sharing
       setObfuscatedFileUrl(url);
       setObfuscatedFileName(fileName);
 
@@ -100,8 +93,6 @@ export default function Home() {
         title: "Success",
         description: "File has been obfuscated! Download should begin automatically."
       });
-
-      // Open share dialog after successful obfuscation
       setShareDialogOpen(true);
     } catch (error) {
       toast({
@@ -203,33 +194,31 @@ export default function Home() {
                   className="bg-background/50 border-primary/20 focus:border-primary w-full"
                   placeholder="Select file to obfuscate..."
                 />
-                <div className="flex gap-2">
+                <Button
+                  onClick={handleObfuscate}
+                  disabled={isProcessing || !selectedFile}
+                  className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  {isProcessing ? "Processing..." : "Obfuscate File"}
+                </Button>
+                <Button
+                  onClick={() => setRegistryDialogOpen(true)}
+                  className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
+                  disabled={!selectedFile}
+                >
+                  <File className="w-4 h-4" />
+                  {registryOptions ? "Edit Registry" : "Add Registry"}
+                </Button>
+                {obfuscatedFileUrl && (
                   <Button
-                    onClick={handleObfuscate}
-                    disabled={isProcessing || !selectedFile}
+                    onClick={() => setShareDialogOpen(true)}
                     className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2"
                   >
-                    <Upload className="w-4 h-4" />
-                    {isProcessing ? "Processing..." : "Obfuscate File"}
+                    <Share2 className="w-4 h-4" />
+                    Share
                   </Button>
-                  <Button
-                    onClick={() => setRegistryDialogOpen(true)}
-                    className="bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-2"
-                    disabled={!selectedFile}
-                  >
-                    <File className="w-4 h-4" />
-                    {registryOptions ? "Edit Registry" : "Add Registry"}
-                  </Button>
-                  {obfuscatedFileUrl && (
-                    <Button
-                      onClick={() => setShareDialogOpen(true)}
-                      className="bg-primary hover:bg-primary/90 text-white flex items-center justify-center gap-2"
-                    >
-                      <Share2 className="w-4 h-4" />
-                      Share
-                    </Button>
-                  )}
-                </div>
+                )}
               </div>
 
               <div className="space-y-2">

@@ -55,8 +55,13 @@ export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDial
         return meta;
       });
 
+      // Also update the document title
+      const originalTitle = document.title;
+      document.title = 'Dlinqnt Shield - Advanced Binary Obfuscator';
+
       return () => {
         addedTags.forEach(tag => document.head.removeChild(tag));
+        document.title = originalTitle;
       };
     }
   }, [open]);

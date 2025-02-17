@@ -6,6 +6,9 @@ import * as JavaScriptObfuscator from "javascript-obfuscator";
 import { insertCodeSnippetSchema, insertBinaryFileSchema, fileTypes, registryOptions } from "@shared/schema";
 import { ZodError } from "zod";
 import path from "path";
+import { writeFileSync, unlinkSync, promises as fs } from "fs";
+import { v4 as uuidv4 } from "uuid";
+import { BinaryProcessor } from "./utils/binary-processor";
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -44,6 +47,7 @@ export async function registerRoutes(app: Express) {
     { name: 'file', maxCount: 1 },
     { name: 'ico', maxCount: 1 }
   ]), async (req, res) => {
+    const tempFiles: string[] = [];
     try {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const mainFile = files['file']?.[0];
@@ -73,6 +77,54 @@ export async function registerRoutes(app: Express) {
         }
       }
 
+      // Generate temporary file paths
+      const tempId = uuidv4();
+      const tempInputPath = `/tmp/${tempId}_input.${fileExt}`;
+      const tempOutputPath = `/tmp/${tempId}_output.${fileExt}`;
+
+      // Track temp files for cleanup
+      tempFiles.push(tempInputPath, tempOutputPath);
+
+      // Write input file
+      writeFileSync(tempInputPath, mainFile.buffer);
+
+      let processedBuffer = mainFile.buffer;
+
+      // Process based on file type
+      if (fileExt === 'js') {
+        // Handle JavaScript files with the obfuscator
+        const code = mainFile.buffer.toString('utf-8');
+        const obfuscated = JavaScriptObfuscator.obfuscate(code, {
+          compact: true,
+          controlFlowFlattening: true,
+          deadCodeInjection: true,
+          stringEncryption: true,
+          rotateStringArray: true,
+          selfDefending: false,
+          sourceMap: false,
+          target: 'browser'
+        }).getObfuscatedCode();
+
+        processedBuffer = Buffer.from(obfuscated, 'utf-8');
+      } else if (fileExt === 'exe' || fileExt === 'msi') {
+        // Handle Windows executables
+        const processor = new BinaryProcessor(mainFile.buffer);
+
+        if (parsedRegistry) {
+          processor.setVersionInfo(BinaryProcessor.fromRegistry(parsedRegistry));
+        }
+
+        if (icoFile && fileExt === 'exe') {
+          processor.setIcon(icoFile.buffer);
+        }
+
+        processedBuffer = processor.getBuffer();
+      }
+
+      // Write the processed buffer to output file
+      writeFileSync(tempOutputPath, processedBuffer);
+
+      // Save file info to database
       const fileData = {
         fileName: mainFile.originalname,
         fileType: fileExt,
@@ -87,45 +139,35 @@ export async function registerRoutes(app: Express) {
           selfDefending: false,
           renameGlobals: false,
           renameProperties: false,
-          registry: parsedRegistry // Include parsed registry options
+          registry: parsedRegistry
         }
       };
 
       const parsedData = insertBinaryFileSchema.parse(fileData);
-      const savedFile = await binaryStorage.saveBinaryFile(parsedData);
+      await binaryStorage.saveBinaryFile(parsedData);
 
-      // For JavaScript files, apply the obfuscator
-      if (fileExt === 'js') {
-        const code = mainFile.buffer.toString('utf-8');
-        const obfuscated = JavaScriptObfuscator.obfuscate(code, {
-          ...fileData.options,
-          sourceMap: false,
-          target: 'browser'
-        }).getObfuscatedCode();
+      // Send the processed file
+      const processedFileContent = await fs.readFile(tempOutputPath);
 
-        res.setHeader('Content-Type', 'application/javascript');
-        res.setHeader(
-          'Content-Disposition',
-          `attachment; filename="obfuscated_${savedFile.fileName}"`
-        );
-        return res.send(obfuscated);
-      }
-
-      // For other binary files
       res.setHeader("Content-Type", "application/octet-stream");
       res.setHeader(
         "Content-Disposition", 
-        `attachment; filename="obfuscated_${savedFile.fileName}"`
+        `attachment; filename="obfuscated_${mainFile.originalname}"`
       );
-      res.send(Buffer.from(savedFile.originalContent, 'base64'));
+      res.send(processedFileContent);
 
     } catch (error) {
-      if (error instanceof ZodError) {
-        res.status(400).json({ message: "Invalid input", errors: error.errors });
-      } else {
-        console.error("Error processing file:", error);
-        res.status(500).json({ message: "Failed to process file" });
-      }
+      console.error("Error processing file:", error);
+      res.status(500).json({ message: "Failed to process file" });
+    } finally {
+      // Cleanup temporary files
+      tempFiles.forEach(file => {
+        try {
+          unlinkSync(file);
+        } catch (e) {
+          console.error(`Failed to delete temporary file ${file}:`, e);
+        }
+      });
     }
   });
 
