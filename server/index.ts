@@ -16,6 +16,7 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+// Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -70,9 +71,8 @@ app.use((req, res, next) => {
   }
 
   const PORT = process.env.PORT || 5000;
-  const HOST = process.env.NODE_ENV === "production" ? "0.0.0.0" : "localhost";
 
-  server.listen(PORT, HOST, () => {
-    log(`Server running in ${app.get("env")} mode on ${HOST}:${PORT}`);
+  server.listen(PORT, "0.0.0.0", () => {
+    log(`Server running in ${app.get("env")} mode on port ${PORT}`);
   });
 })();
