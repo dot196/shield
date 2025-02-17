@@ -138,6 +138,24 @@ export async function registerRoutes(app: Express) {
           processor.pumpFileSize(pumpSizeMB);
         }
 
+        // Parse polymorphic options if provided
+        let polymorphicOptions;
+        if (req.body.polymorphic) {
+          try {
+            const polymorphicData = JSON.parse(req.body.polymorphic);
+            polymorphicOptions = polymorphicOptions.parse(polymorphicData); // Assuming polymorphicOptions schema exists
+          } catch (e) {
+            return res.status(400).json({ 
+              message: "Invalid polymorphic options provided"
+            });
+          }
+        }
+
+        // Apply polymorphic obfuscation if options are provided
+        if (polymorphicOptions) {
+          processor.applyPolymorphicObfuscation(polymorphicOptions); // Assuming applyPolymorphicObfuscation exists in BinaryProcessor
+        }
+
         processedBuffer = processor.getBuffer();
       }
 

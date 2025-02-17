@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RegistryDialog } from "@/components/registry-dialog";
 import { ShareDialog } from "@/components/share-dialog";
-import { type RegistryOptions } from "@shared/schema";
+import { type RegistryOptions, type PolymorphicOptions } from "@shared/schema";
 import { JunkPumpDialog } from "@/components/junk-pump-dialog";
 
 export default function Home() {
@@ -23,6 +23,7 @@ export default function Home() {
   const [obfuscatedFileName, setObfuscatedFileName] = useState<string>("");
   const [pumpSize, setPumpSize] = useState<number | null>(null);
   const [junkPumpDialogOpen, setJunkPumpDialogOpen] = useState(false);
+  const [polyOptions, setPolyOptions] = useState<PolymorphicOptions | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -106,6 +107,74 @@ export default function Home() {
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Failed to obfuscate file",
+        variant: "destructive"
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePolymorphicObfuscate = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "Error",
+        description: "Please select a file to obfuscate",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedFile);
+
+      if (selectedIcon) {
+        formData.append("ico", selectedIcon);
+      }
+
+      if (registryOptions) {
+        formData.append("registry", JSON.stringify(registryOptions));
+      }
+
+      if (pumpSize && pumpSize > 0) {
+        formData.append("pumpSize", pumpSize.toString());
+      }
+
+      // Add polymorphic options
+      formData.append("polymorphic", JSON.stringify({
+        metamorphicCodeGeneration: true,
+        dynamicAntiDebugging: true,
+        controlFlowObfuscation: true,
+        stringMutation: true,
+        virtualMachine: true
+      }));
+
+      const response = await fetch("/api/obfuscate/binary", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      const blob = await response.blob();
+      const fileName = `poly_obfuscated_${selectedFile.name}`;
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setObfuscatedFileUrl(url);
+      setObfuscatedFileName(fileName);
+
+      toast({
+        title: "Success",
+        description: "File has been polymorphically obfuscated! Download should begin automatically."
+      });
+      setShareDialogOpen(true);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to apply polymorphic obfuscation",
         variant: "destructive"
       });
     } finally {
@@ -209,6 +278,14 @@ export default function Home() {
                 >
                   <Upload className="w-4 h-4" />
                   {isProcessing ? "Processing..." : "Obfuscate File"}
+                </Button>
+                <Button
+                  onClick={handlePolymorphicObfuscate}
+                  disabled={isProcessing || !selectedFile}
+                  className="bg-primary hover:bg-primary/90 text-white w-full flex items-center justify-center gap-2 mt-2"
+                >
+                  <Upload className="w-4 h-4" />
+                  {isProcessing ? "Processing..." : "Poly"}
                 </Button>
                 <Button
                   onClick={() => setRegistryDialogOpen(true)}

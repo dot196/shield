@@ -69,6 +69,16 @@ export const predefinedProfiles = {
   }
 } as const;
 
+export const polymorphicOptions = z.object({
+  metamorphicCodeGeneration: z.boolean().default(true),
+  dynamicAntiDebugging: z.boolean().default(true),
+  controlFlowObfuscation: z.boolean().default(true),
+  stringMutation: z.boolean().default(true),
+  virtualMachine: z.boolean().default(true),
+});
+
+export type PolymorphicOptions = z.infer<typeof polymorphicOptions>;
+
 export const obfuscationOptions = z.object({
   compact: z.boolean().default(true),
   controlFlowFlattening: z.boolean().default(true),
@@ -79,7 +89,8 @@ export const obfuscationOptions = z.object({
   renameGlobals: z.boolean().default(false),
   renameProperties: z.boolean().default(false),
   filePumpSizeMB: z.number().min(0).optional(),
-  registry: registryOptions.optional()
+  registry: registryOptions.optional(),
+  polymorphic: polymorphicOptions.optional()
 });
 
 export type ObfuscationOptions = z.infer<typeof obfuscationOptions>;
