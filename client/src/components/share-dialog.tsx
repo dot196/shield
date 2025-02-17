@@ -17,14 +17,16 @@ interface ShareDialogProps {
 }
 
 export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDialogProps) {
-  const shareText = `Check out my obfuscated file: ${fileName}`;
+  // Create a shareable message that includes the website URL
+  const shareText = `Check out my obfuscated file ${fileName} using Dlinqnt Shield!`;
+  const websiteUrl = window.location.origin;
   const encodedText = encodeURIComponent(shareText);
-  const encodedUrl = encodeURIComponent(fileUrl);
+  const encodedUrl = encodeURIComponent(websiteUrl);
 
   const shareLinks = {
     twitter: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
     linkedin: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}`,
-    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+    facebook: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}&quote=${encodedText}`,
     reddit: `https://reddit.com/submit?url=${encodedUrl}&title=${encodedText}`,
     telegram: `https://t.me/share/url?url=${encodedUrl}&text=${encodedText}`
   };
