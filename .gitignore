@@ -7,25 +7,20 @@ node_modules
 coverage
 
 # Production
-dist
 build
+dist
 
-# Misc
-.DS_Store
-*.pem
+# Environment
 .env
 .env.*
 !.env.example
 
-# Debug
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# TypeScript
-*.tsbuildinfo
-
-# Editor directories and files
+# Editor
 .idea
 .vscode
 *.suo
@@ -34,15 +29,9 @@ yarn-error.log*
 *.sln
 *.sw?
 
-# Logs
-logs
-*.log
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
+# OS
+.DS_Store
+Thumbs.db
 
 # Database
 *.sqlite
@@ -53,14 +42,15 @@ pids
 .netlify
 .next
 
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# Capacitor
+android/app/release/
+ios/App/Pods/
+ios/App/build/
 
-# Previous entries
+# Temporary files
+*.log
+*.tmp
+.DS_Store
+
+# Previous entries (from original, not in edited)
 *.tar.gz

@@ -1,30 +1,4 @@
-# Deploying Dlinqnt Shield
-
-This guide will help you deploy Dlinqnt Shield to Heroku using GitHub integration.
-
-## Prerequisites
-
-1. [GitHub Account](https://github.com)
-2. [Heroku Account](https://heroku.com)
-3. [Heroku CLI](https://devcenter.heroku.com/articles/heroku-cli) installed
-
-## GitHub Setup
-
-1. Create a new repository on GitHub:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/username/dlinqnt-shield.git
-   git push -u origin main
-   ```
-
-## Heroku Deployment
-
-1. Log in to Heroku:
-   ```bash
-   heroku login
+heroku login
    ```
 
 2. Create a new Heroku app:
@@ -53,16 +27,6 @@ This guide will help you deploy Dlinqnt Shield to Heroku using GitHub integratio
    - In Heroku dashboard, go to Deploy tab
    - Under "Automatic deploys", choose your main branch
    - Click "Enable Automatic Deploys"
-
-7. Deploy:
-   - Either push to GitHub (if automatic deploys enabled):
-     ```bash
-     git push origin main
-     ```
-   - Or manually deploy via Heroku:
-     ```bash
-     git push heroku main
-     ```
 
 ## Verifying Deployment
 
@@ -93,4 +57,3 @@ If you encounter any issues:
 3. Ensure all environment variables are set:
    ```bash
    heroku config
-   ```

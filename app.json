@@ -1,8 +1,8 @@
 {
   "name": "dlinqnt-shield",
   "description": "A secure, trademark-protected file obfuscation platform with advanced digital rights management",
-  "repository": "https://github.com/username/dlinqnt-shield",
-  "keywords": ["node", "express", "react", "typescript", "file-obfuscation"],
+  "repository": "https://github.com/dlinqnt/shield",
+  "keywords": ["node", "express", "react", "typescript", "file-obfuscation", "polymorphic-protection"],
   "addons": [
     "heroku-postgresql:hobby-dev"
   ],
