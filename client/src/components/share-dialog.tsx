@@ -1,6 +1,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   SiX,
   SiLinkedin,
   SiFacebook,
@@ -20,7 +20,7 @@ interface ShareDialogProps {
 export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDialogProps) {
   const shareText = `Check out my protected file ${fileName} using Dlinqnt Shield - Advanced Binary Protection Technology`;
   const websiteUrl = "https://dlinqnt-shield.replit.app";
-  const appDescription = "Dlinqnt Shield - Advanced binary code obfuscator with military-grade protection technology. © 2025 Cooper Dignan. Red Shield™ is a registered trademark. Protected by copyright law.";
+  const appDescription = "Advanced binary code obfuscator with military-grade protection technology";
   const encodedText = encodeURIComponent(shareText);
   const encodedUrl = encodeURIComponent(websiteUrl);
   const encodedDescription = encodeURIComponent(appDescription);
@@ -28,10 +28,9 @@ export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDial
   // Update head meta tags for social media sharing
   React.useEffect(() => {
     if (open) {
-      // Basic meta tags
       const metaTags = [
         { name: 'description', content: appDescription },
-        { property: 'og:title', content: 'Dlinqnt Shield - Advanced Binary Obfuscator' },
+        { property: 'og:title', content: 'Dlinqnt Shield - Advanced Binary Protection' },
         { property: 'og:description', content: appDescription },
         { property: 'og:type', content: 'website' },
         { property: 'og:url', content: websiteUrl },
@@ -40,7 +39,7 @@ export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDial
         { property: 'og:image:width', content: '1200' },
         { property: 'og:image:height', content: '630' },
         { name: 'twitter:card', content: 'summary_large_image' },
-        { name: 'twitter:title', content: 'Dlinqnt Shield - Advanced Binary Obfuscator' },
+        { name: 'twitter:title', content: 'Dlinqnt Shield - Advanced Binary Protection' },
         { name: 'twitter:description', content: appDescription },
         { name: 'twitter:image', content: `${websiteUrl}/shield-icon.svg` }
       ];
@@ -56,7 +55,7 @@ export function ShareDialog({ open, onOpenChange, fileUrl, fileName }: ShareDial
 
       // Also update the document title
       const originalTitle = document.title;
-      document.title = 'Dlinqnt Shield - Advanced Binary Obfuscator';
+      document.title = 'Dlinqnt Shield - Advanced Binary Protection';
 
       return () => {
         addedTags.forEach(tag => document.head.removeChild(tag));
