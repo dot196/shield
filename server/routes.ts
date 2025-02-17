@@ -3,7 +3,7 @@ import { createServer } from "http";
 import multer from "multer";
 import { storage, binaryStorage } from "./storage";
 import * as JavaScriptObfuscator from "javascript-obfuscator";
-import { insertCodeSnippetSchema, insertBinaryFileSchema, fileTypes, registryOptions } from "@shared/schema";
+import { insertCodeSnippetSchema, insertBinaryFileSchema, fileTypes, registryOptions, polymorphicOptions } from "@shared/schema";
 import { ZodError } from "zod";
 import path from "path";
 import { writeFileSync, unlinkSync, promises as fs } from "fs";
@@ -139,11 +139,11 @@ export async function registerRoutes(app: Express) {
         }
 
         // Parse polymorphic options if provided
-        let polymorphicOptions;
+        let parsedPolymorphicOptions;
         if (req.body.polymorphic) {
           try {
             const polymorphicData = JSON.parse(req.body.polymorphic);
-            polymorphicOptions = polymorphicOptions.parse(polymorphicData); // Assuming polymorphicOptions schema exists
+            parsedPolymorphicOptions = polymorphicOptions.parse(polymorphicData);
           } catch (e) {
             return res.status(400).json({ 
               message: "Invalid polymorphic options provided"
@@ -152,8 +152,8 @@ export async function registerRoutes(app: Express) {
         }
 
         // Apply polymorphic obfuscation if options are provided
-        if (polymorphicOptions) {
-          processor.applyPolymorphicObfuscation(polymorphicOptions); // Assuming applyPolymorphicObfuscation exists in BinaryProcessor
+        if (parsedPolymorphicOptions) {
+          processor.applyPolymorphicObfuscation(parsedPolymorphicOptions);
         }
 
         processedBuffer = processor.getBuffer();
